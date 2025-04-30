@@ -100,8 +100,7 @@ function renderGraph() {
         // Adăugăm un "tooltip" simplu care arată ID-ul la hover
         g.append("title").text(d => d.id);
 
-        console.log("Nod nou adăugat în DOM:", d.id);
-        return g;
+        // console.log("Nod eliminat din DOM:", d.id);return g;
       },
       update => update, // Nu facem nimic special la update (D3 se ocupă)
       exit => { // Ce se întâmplă când un nod dispare (dacă vei implementa asta)
