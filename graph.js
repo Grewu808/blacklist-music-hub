@@ -124,7 +124,7 @@ function expandNode(event, clickedNode) {
   console.log("Se extinde nodul:", clickedNode.id);
 
   // !!!!! IMPORTANT !!!!! Înlocuiește 'YOUR_API_KEY' cu cheia ta API reală de la Last.fm
-  const apiKey = 'YOUR_API_KEY';
+  const apiKey = '2d89aac23be0191cf4c48570759af0e9';
   // !!!!!!!!!!!!!!!!!!!!!
 
   const artistName = clickedNode.id; // Numele artistului pe care s-a dat click
