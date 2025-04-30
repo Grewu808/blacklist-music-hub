@@ -1,5 +1,5 @@
 
-body {
+html, body {
   margin: 0;
   padding: 0;
   background-color: #0f0f0f;
@@ -9,7 +9,18 @@ body {
   justify-content: center;
   align-items: center;
   height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
 }
+
+@media (min-width: 800px) {
+  html, body {
+    overflow: auto;
+    touch-action: auto;
+  }
+}
+
 .container {
   text-align: center;
 }
