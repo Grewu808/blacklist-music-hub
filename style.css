@@ -1,0 +1,32 @@
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #0f0f0f;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.container {
+  text-align: center;
+}
+.logo {
+  font-size: 2em;
+  font-weight: bold;
+  margin-bottom: 1em;
+}
+.manifest {
+  font-style: italic;
+  margin-bottom: 2em;
+}
+.start-button {
+  background-color: #ffffff;
+  color: #0f0f0f;
+  padding: 10px 20px;
+  font-size: 1em;
+  border: none;
+  cursor: pointer;
+}
