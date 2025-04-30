@@ -1,6 +1,4 @@
-
-
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat - linia 101 comentată) ------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -51,7 +49,7 @@ function ticked() {
   }
   if (nodeGroup) {
      nodeGroup
-       .attr("transform", d => `translate(${d.x},${d.y})`);
+       .attr("transform", d => `translate(<span class="math-inline">\{d\.x\},</span>{d.y})`);
   }
 }
 
@@ -59,7 +57,7 @@ function ticked() {
 function renderGraph() {
   // Selectăm și legăm datele pentru legături (links)
   link = svg.selectAll("line")
-    .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`) // Folosim ID-uri sursa/tinta pt cheie
+    .data(linkData, d => `<span class="math-inline">\{d\.source\.id \|\| d\.source\}\-</span>{d.target.id || d.target}`) // Folosim ID-uri sursa/tinta pt cheie
     .join("line")
     .attr("stroke-width", 1)
     .attr("stroke", "#555")
@@ -90,21 +88,16 @@ function renderGraph() {
           .attr("r", 14) // Raza cercului interior
           .attr("fill", "white"); // Culoare de umplere
 
-        // Adăugăm textul (numele artistului) - ascuns inițial, apare la hover pe title
-        // Sau îl putem afișa direct
-        // g.append("text")
-        //  .attr("dy", ".35em") // Ajustare verticală
-        //  .attr("text-anchor", "middle") // Centrare text
-        //  .text(d => d.id);
-
         // Adăugăm un "tooltip" simplu care arată ID-ul la hover
         g.append("title").text(d => d.id);
 
-        // console.log("Nod eliminat din DOM:", d.id);return g;
+        console.log("Nod nou adăugat în DOM:", d.id);
+        return g;
       },
       update => update, // Nu facem nimic special la update (D3 se ocupă)
       exit => { // Ce se întâmplă când un nod dispare (dacă vei implementa asta)
-          console.log("Nod eliminat din DOM:", d.id);
+          // AICI ERA LINIA 101 CARE DADEA EROARE - ACUM ESTE COMENTATĂ:
+          // console.log("Nod eliminat din DOM:", d.id);
           exit.remove();
       }
     );
@@ -125,7 +118,7 @@ function expandNode(event, clickedNode) {
   console.log("Se extinde nodul:", clickedNode.id);
 
   // !!!!! IMPORTANT !!!!! Înlocuiește 'YOUR_API_KEY' cu cheia ta API reală de la Last.fm
-  const apiKey = '2d89aac23be0191cf4c48570759af0e9';
+  const apiKey = 'YOUR_API_KEY';
   // !!!!!!!!!!!!!!!!!!!!!
 
   const artistName = clickedNode.id; // Numele artistului pe care s-a dat click
@@ -140,7 +133,7 @@ function expandNode(event, clickedNode) {
   const limit = 5; // Poți ajusta acest număr (ex: 3, 5, 7)
 
   // Construim URL-ul pentru API-ul Last.fm - metoda artist.getSimilar
-  const apiUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&limit=${limit}&format=json`;
+  const apiUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=<span class="math-inline">\{encodeURIComponent\(artistName\)\}&api\_key\=</span>{apiKey}&limit=${limit}&format=json`;
 
   console.log("Se apelează API-ul Last.fm:", apiUrl);
 
@@ -186,92 +179,4 @@ function expandNode(event, clickedNode) {
         similarArtists.forEach((artist, index) => {
           const newId = artist.name; // Numele artistului similar real
 
-          // Verificăm dacă nu avem deja un nod cu acest nume
-          if (!existing.has(newId)) {
-            const angle = (2 * Math.PI / similarArtists.length) * index; // Distribuim uniform în cerc
-            const newNode = {
-              id: newId,
-              // Setăm poziția inițială un pic randomizată în jurul părintelui
-              x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 20,
-              y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 20,
-              // Putem seta și vx, vy pentru a le da un impuls inițial dacă dorim
-              // vx: (Math.random() - 0.5) * 2,
-              // vy: (Math.random() - 0.5) * 2
-            };
-
-            nodeData.push(newNode); // Adăugăm nodul nou în lista de noduri
-            linkData.push({ source: clickedNode.id, target: newId }); // Adăugăm legătura nouă
-            count++; // Incrementăm contorul
-            console.log("Adăugat nod nou:", newId);
-            existing.add(newId); // Adăugăm ID-ul în set pentru a evita duplicate în aceeași rundă
-          } else {
-            console.log("Nodul exista deja:", newId);
-            // Verificăm dacă legătura există deja
-            const linkExists = linkData.some(l =>
-               (l.source.id === clickedNode.id && l.target.id === newId) ||
-               (l.source.id === newId && l.target.id === clickedNode.id)
-            );
-            if (!linkExists) {
-                linkData.push({ source: clickedNode.id, target: newId });
-                console.log("Adăugat legătură nouă către nod existent:", newId);
-                // Decidem dacă vrem să forțăm re-render și pt legături noi spre noduri vechi
-                 count++; // Incrementăm și aici dacă vrem ca renderGraph() să fie apelat
-            }
-          }
-        });
-
-        // Dacă am adăugat cel puțin un nod sau o legătură nouă, redesenăm graficul
-        if (count > 0) {
-          console.log("Redesenare grafic...");
-          renderGraph(); // Funcția ta existentă care redesenează graful
-        } else {
-           console.log("Nu au fost adăugați artiști sau legături noi.");
-        }
-
-      } else {
-        // Cazul în care similarartists.artist nu există sau nu e array (poate fi obiect gol pt unii artiști?)
-        console.log("API-ul Last.fm nu a returnat artiști similari în formatul așteptat pentru:", artistName, data);
-        // Afișează un mesaj utilizatorului că nu s-au găsit rezultate
-      }
-    })
-    .catch(error => {
-      console.error('A apărut o eroare la preluarea sau procesarea artiștilor similari:', error);
-      // Afișează un mesaj de eroare utilizatorului pe pagină (ex: într-un div dedicat)
-      // Poți elimina indicatorul de încărcare aici
-    })
-    .finally(() => {
-        // Cod care se execută indiferent dacă fetch a reușit sau a eșuat
-        // Poți elimina indicatorul de încărcare aici
-        console.log("Apelul API finalizat pentru:", artistName);
-    });
-}
-// --- SFÂRȘIT FUNCȚIE expandNode MODIFICATĂ ---
-
-
-// Funcția pentru drag & drop (preluată din codul tău original)
-function drag(simulation) {
-  function dragstarted(event, d) {
-    if (!event.active) simulation.alphaTarget(0.3).restart(); // Crește alpha la start drag
-    d.fx = d.x; // Fixează poziția X a nodului la cea curentă
-    d.fy = d.y; // Fixează poziția Y a nodului la cea curentă
-  }
-  function dragged(event, d) {
-    d.fx = event.x; // Actualizează poziția fixă X pe măsură ce tragi
-    d.fy = event.y; // Actualizează poziția fixă Y pe măsură ce tragi
-  }
-  function dragended(event, d) {
-    if (!event.active) simulation.alphaTarget(0); // Resetează alpha la final drag
-    // Lăsăm nodul fixat (fx, fy setate) sau îl eliberăm?
-    // Dacă vrei să rămână unde l-ai lăsat, nu faci nimic.
-    // Dacă vrei să fie "eliberat" și să se reașeze conform forțelor:
-    // d.fx = null;
-    // d.fy = null;
-  }
-
-  return d3.drag()
-    .on("start", dragstarted)
-    .on("drag", dragged)
-    .on("end", dragended);
-}
-
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat) ------------
+          //
