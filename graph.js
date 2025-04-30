@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat - linia 101 comentată) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v3) ------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -15,7 +15,7 @@ let simulation, link, nodeGroup;
 d3.json("data.json").then(data => {
   console.log("Date inițiale încărcate din data.json:", data);
   // Asigură-te că data.json are formatul { "nodes": [...], "links": [...] }
-  if (data && data.nodes && data.links) {
+  if (data && data.nodes && Array.isArray(data.nodes) && data.links && Array.isArray(data.links)) {
     nodeData = [...data.nodes]; // Copiem nodurile inițiale
     linkData = [...data.links]; // Copiem legăturile inițiale
 
@@ -29,17 +29,18 @@ d3.json("data.json").then(data => {
     // Renderizăm graficul inițial
     renderGraph();
   } else {
-    console.error("Eroare: data.json nu are formatul așteptat sau este gol.");
-    // Poți decide ce faci aici - poate încarci un nod default?
-    // De ex: nodeData = [{id: "Search for an artist"}]; renderGraph();
+    console.error("Eroare: data.json nu are formatul așteptat sau este gol/invalid.");
+    // Poți decide ce faci aici - poate încarci un nod default sau afișezi un mesaj
+    // De ex: nodeData = [{id: "Error loading data"}]; renderGraph();
   }
 }).catch(error => {
-  console.error("Eroare la încărcarea data.json:", error);
+  console.error("Eroare la încărcarea sau procesarea data.json:", error);
   // Gestionează eroarea - poate afișezi un mesaj utilizatorului
 });
 
 // Funcția care actualizează pozițiile la fiecare pas al simulării
 function ticked() {
+  // Verificăm dacă elementele există înainte de a le actualiza atributele
   if (link) {
      link
        .attr("x1", d => d.source.x)
@@ -49,66 +50,86 @@ function ticked() {
   }
   if (nodeGroup) {
      nodeGroup
-       .attr("transform", d => `translate(<span class="math-inline">\{d\.x\},</span>{d.y})`);
+       .attr("transform", d => `translate(${d.x},${d.y})`);
   }
 }
 
 // Funcția care (re)desenează graficul
 function renderGraph() {
+  // Verificăm dacă svg există
+  if (!svg) {
+      console.error("Elementul SVG #viz nu a fost găsit!");
+      return;
+  }
+
   // Selectăm și legăm datele pentru legături (links)
-  link = svg.selectAll("line")
-    .data(linkData, d => `<span class="math-inline">\{d\.source\.id \|\| d\.source\}\-</span>{d.target.id || d.target}`) // Folosim ID-uri sursa/tinta pt cheie
+  link = svg.selectAll("line.link") // Adăugăm o clasă pentru specificitate
+    .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
     .join("line")
+    .attr("class", "link") // Adăugăm clasa
     .attr("stroke-width", 1)
     .attr("stroke", "#555")
     .attr("stroke-opacity", 0.4);
 
   // Selectăm și legăm datele pentru noduri (nodes)
   nodeGroup = svg.selectAll("g.node")
-    .data(nodeData, d => d.id) // Folosim ID-ul nodului ca cheie
+    .data(nodeData, d => d.id)
     .join(
       enter => { // Ce se întâmplă când intră un nod nou
         const g = enter.append("g")
-          .attr("class", "node")
-          .call(drag(simulation)) // Permite drag & drop pe noduri
-          .on("click", (event, d) => { // Ce se întâmplă la click pe nod
-            event.stopPropagation(); // Oprim propagarea evenimentului
-            expandNode(event, d); // Apelăm funcția de expandare
+          .attr("class", "node"); // Setăm clasa
+
+        // Atașăm event handler-ul de click
+        g.on("click", (event, d) => {
+            event.stopPropagation();
+            expandNode(event, d);
           });
 
-        // Adăugăm primul cerc (exterior, poate pentru efect vizual)
+        // Adăugăm primul cerc (exterior)
         g.append("circle")
-          .attr("r", 24) // Raza cercului exterior
-          .attr("fill", "transparent") // Umplere transparentă
-          .attr("stroke", "#aaa") // Culoare contur
+          .attr("class", "outer-circle") // Adăugăm clasă
+          .attr("r", 24)
+          .attr("fill", "transparent")
+          .attr("stroke", "#aaa")
           .attr("stroke-width", 1);
 
-        // Adăugăm al doilea cerc (interior, vizibil)
+        // Adăugăm al doilea cerc (interior)
         g.append("circle")
-          .attr("r", 14) // Raza cercului interior
-          .attr("fill", "white"); // Culoare de umplere
+          .attr("class", "inner-circle") // Adăugăm clasă
+          .attr("r", 14)
+          .attr("fill", "white");
 
-        // Adăugăm un "tooltip" simplu care arată ID-ul la hover
+        // Adăugăm tooltip
         g.append("title").text(d => d.id);
 
-        console.log("Nod nou adăugat în DOM:", d.id);
+        // Verificăm dacă simularea e gata ÎNAINTE de a atașa drag
+        if (simulation) {
+            g.call(drag(simulation)); // Atașăm drag DOAR dacă simularea există
+        } else {
+            console.warn("Simularea nu a fost gata la crearea nodului, drag nu a fost atașat:", d.id);
+        }
+
+        // Folosim un log mai simplu aici pentru a evita ReferenceError anterior
+        console.log("Nod nou (grup) creat în DOM.");
         return g;
       },
-      update => update, // Nu facem nimic special la update (D3 se ocupă)
-      exit => { // Ce se întâmplă când un nod dispare (dacă vei implementa asta)
+      update => update, // Selecția de update (noduri existente)
+      exit => { // Selecția de exit (noduri care dispar)
           // AICI ERA LINIA 101 CARE DADEA EROARE - ACUM ESTE COMENTATĂ:
           // console.log("Nod eliminat din DOM:", d.id);
-          exit.remove();
+          exit.transition().duration(300).attr("opacity", 0).remove(); // Efect de fade out la remove
       }
     );
 
   // Actualizăm simularea cu noile date (noduri și legături)
   if (simulation) {
-      simulation.nodes(nodeData);
-      simulation.force("link").links(linkData);
-      simulation.alpha(1).restart(); // Repornim simularea pentru a aranja noile elemente
+      simulation.nodes(nodeData); // Update noduri in simulare
+      simulation.force("link").links(linkData); // Update legături in simulare
+      simulation.alpha(1).restart(); // Repornim simularea pt a rearanja elementele
+      console.log("Simulare actualizată și repornită.");
   } else {
-      console.warn("Simularea nu este initializată încă.");
+      // Acest mesaj e normal să apară la început dacă renderGraph e apelat înainte ca simularea să fie definită
+      console.warn("renderGraph a fost apelat, dar simularea nu este încă initializată.");
   }
 }
 
@@ -118,65 +139,144 @@ function expandNode(event, clickedNode) {
   console.log("Se extinde nodul:", clickedNode.id);
 
   // !!!!! IMPORTANT !!!!! Înlocuiește 'YOUR_API_KEY' cu cheia ta API reală de la Last.fm
-  const apiKey = 'YOUR_API_KEY';
+  const apiKey = '2d89aac23be0191cf4c48570759af0e9';
   // !!!!!!!!!!!!!!!!!!!!!
 
-  const artistName = clickedNode.id; // Numele artistului pe care s-a dat click
+  const artistName = clickedNode.id;
 
-  // Verificăm dacă numele artistului este valid (nu e gol sau undefined)
   if (!artistName) {
       console.error("Numele artistului este invalid:", artistName);
-      return; // Oprim funcția dacă nu avem nume valid
+      return;
   }
 
-  // Setăm limita de artiști similari pe care îi cerem de la API
-  const limit = 5; // Poți ajusta acest număr (ex: 3, 5, 7)
-
-  // Construim URL-ul pentru API-ul Last.fm - metoda artist.getSimilar
-  const apiUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=<span class="math-inline">\{encodeURIComponent\(artistName\)\}&api\_key\=</span>{apiKey}&limit=${limit}&format=json`;
+  const limit = 5;
+  const apiUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&limit=${limit}&format=json`;
 
   console.log("Se apelează API-ul Last.fm:", apiUrl);
 
-  // Afișăm un indicator de încărcare (opțional)
-  // Poți adăuga un mic text sau spinner lângă nodul click-uit
+  // TODO: Adaugă indicator vizual de încărcare lângă clickedNode
 
-  // Folosim fetch pentru a chema API-ul
   fetch(apiUrl)
     .then(response => {
       if (!response.ok) {
-        // Încercăm să citim mesajul de eroare de la Last.fm dacă există
         return response.json().catch(() => null).then(errorBody => {
              const errorMessage = errorBody?.message || `HTTP error! status: ${response.status}`;
              console.error("Eroare de la API Last.fm:", errorMessage, errorBody);
-             throw new Error(errorMessage);
+             throw new Error(errorMessage); // Aruncăm eroarea pentru a intra în .catch
         });
       }
-      return response.json();
+      return response.json(); // Parsează JSON dacă răspunsul e OK
     })
     .then(data => {
       console.log("Date primite de la Last.fm (similar artists):", data);
 
-      // Verificăm dacă API-ul a returnat artiști similari
-      // Structura răspunsului: data.similarartists.artist = [...]
-      if (data.similarartists && data.similarartists.artist && Array.isArray(data.similarartists.artist)) {
+      if (data.error) {
+          // Last.fm trimite uneori erori în format JSON cu cod 200 OK
+          console.error("Eroare returnată de API Last.fm în JSON:", data.message);
+          // Afișează mesaj utilizatorului
+          return; // Oprește execuția aici
+      }
 
-        // Filtrăm artiștii returnați dacă API-ul returnează chiar artistul căutat
+      if (data.similarartists && data.similarartists.artist && Array.isArray(data.similarartists.artist)) {
         const similarArtists = data.similarartists.artist.filter(artist => artist.name !== artistName);
 
         if (similarArtists.length === 0) {
-            console.log("Nu s-au găsit artiști *similari* (poate doar cel căutat a fost returnat, sau niciunul).");
-            // Afișează un mesaj utilizatorului că nu s-au găsit rezultate noi
-            return; // Oprim dacă nu avem artiști noi
+            console.log("Nu s-au găsit artiști *similari* noi.");
+            // TODO: Afișează mesaj utilizatorului
+            return;
         }
 
-        const existing = new Set(nodeData.map(n => n.id)); // Set cu ID-urile nodurilor existente
-        let count = 0; // Numărăm câți artiști noi adăugăm
+        const existing = new Set(nodeData.map(n => n.id));
+        let count = 0;
 
-        const cx = clickedNode.x ?? width / 2; // Folosim poziția curentă din simulare
+        const cx = clickedNode.x ?? width / 2;
         const cy = clickedNode.y ?? height / 2;
-        const radius = 80; // Distanța la care apar noii artiști
+        const radius = 80;
 
         similarArtists.forEach((artist, index) => {
-          const newId = artist.name; // Numele artistului similar real
+          const newId = artist.name;
+          if (!existing.has(newId)) {
+            const angle = (2 * Math.PI / similarArtists.length) * index;
+            const newNode = {
+              id: newId,
+              x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 20,
+              y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 20,
+            };
+            nodeData.push(newNode);
+            linkData.push({ source: clickedNode.id, target: newId });
+            count++;
+            console.log("Adăugat nod nou:", newId);
+            existing.add(newId);
+          } else {
+            console.log("Nodul exista deja:", newId);
+            const linkExists = linkData.some(l =>
+               (l.source.id === clickedNode.id && l.target.id === newId) ||
+               (l.source.id === newId && l.target.id === clickedNode.id) ||
+               // Verificăm și obiectele sursă/țintă direct (în caz că nu sunt stringuri)
+               (l.source === clickedNode.id && l.target === newId) ||
+               (l.source === newId && l.target === clickedNode.id)
+            );
+            if (!linkExists) {
+                linkData.push({ source: clickedNode.id, target: newId });
+                console.log("Adăugat legătură nouă către nod existent:", newId);
+                 count++; // Incrementăm și aici dacă vrem ca renderGraph() să fie apelat
+            }
+          }
+        });
 
-          //
+        if (count > 0) {
+          console.log("Redesenare grafic...");
+          renderGraph();
+        } else {
+           console.log("Nu au fost adăugați artiști sau legături noi.");
+        }
+
+      } else {
+        console.log("API-ul Last.fm nu a returnat artiști similari în formatul așteptat pentru:", artistName, data);
+        // TODO: Afișează mesaj utilizatorului
+      }
+    })
+    .catch(error => {
+      console.error('A apărut o eroare în lanțul fetch:', error);
+      // TODO: Afișează un mesaj de eroare utilizatorului
+      // TODO: Elimină indicatorul de încărcare
+    })
+    .finally(() => {
+        console.log("Apelul API finalizat pentru:", artistName);
+        // TODO: Elimină indicatorul de încărcare
+    });
+}
+// --- SFÂRȘIT FUNCȚIE expandNode MODIFICATĂ ---
+
+
+// Funcția pentru drag & drop
+function drag(simulation) {
+  // Verificăm dacă simularea este validă
+  if (!simulation) {
+      console.warn("Încercare de a atașa drag cu o simulare invalidă.");
+      return () => {}; // Returnăm o funcție goală dacă nu avem simulare
+  }
+
+  function dragstarted(event, d) {
+    if (!event.active) simulation.alphaTarget(0.3).restart();
+    d.fx = d.x;
+    d.fy = d.y;
+  }
+  function dragged(event, d) {
+    d.fx = event.x;
+    d.fy = event.y;
+  }
+  function dragended(event, d) {
+    if (!event.active) simulation.alphaTarget(0);
+    // Lăsăm nodul fixat implicit
+    // d.fx = null; // Decomentează pentru a elibera nodul după drag
+    // d.fy = null;
+  }
+
+  return d3.drag()
+    .on("start", dragstarted)
+    .on("drag", dragged)
+    .on("end", dragended);
+}
+
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v3) ------------
