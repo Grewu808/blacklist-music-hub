@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v8 - Artwork) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v9 - Stabilitate + Coliziune) ------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -10,13 +10,12 @@ const svg = d3.select("#viz")
 const container = svg.append("g").attr("class", "zoom-container");
 
 // --- ADAUGAM DEFINITIA PENTRU CLIPPATH CIRCULAR ---
-const clipPathRadius = 16; // Raza pentru artwork/clip-path (fosta raza a cercului interior)
+const clipPathRadius = 16; // Raza pentru artwork/clip-path
 svg.append("defs").append("clipPath")
-    .attr("id", "clip-circle") // ID unic pentru clipPath
+    .attr("id", "clip-circle")
   .append("circle")
     .attr("r", clipPathRadius);
 console.log("ClipPath 'clip-circle' definit.");
-// --- SFARSIT DEFINITIE CLIPPATH ---
 
 // Variabile globale pentru date și simulare
 let nodeData = [];
@@ -25,12 +24,14 @@ let simulation;
 let link = container.selectAll("line.link");
 let nodeGroup = container.selectAll("g.node");
 
-// --- Inițializare Simulare ---
+// --- Inițializare Simulare (cu forceCollide adăugat) ---
 simulation = d3.forceSimulation(nodeData)
-  .force("link", d3.forceLink(linkData).distance(170).id(d => d.id))
-  .force("charge", d3.forceManyBody().strength(-450))
-  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("link", d3.forceLink(linkData).distance(170).id(d => d.id)) // Distanța între noduri legate
+  .force("charge", d3.forceManyBody().strength(-450)) // Respingerea generală
+  .force("center", d3.forceCenter(width / 2, height / 2)) // Forța care trage spre centru
+  .force("collide", d3.forceCollide().radius(30)) // <<< ADAUGAT: Previne suprapunerea (raza puțin > 28)
   .on("tick", ticked);
+console.log("Simulare inițializată cu forceCollide.");
 
 // --- Inițializare Comportament Zoom ---
 const zoom = d3.zoom()
@@ -82,14 +83,11 @@ function handleSearch() {
   nodeGroup = container.selectAll("g.node");
   console.log("Graficul vechi a fost șters.");
 
-  // Pentru nodul initial căutat, nu avem imagine din start.
-  // Am putea face un apel API aici (artist.getinfo) să luăm poza,
-  // sau lăsăm fără poză/cu placeholder. Momentan lăsăm fără.
   const newNode = {
     id: artistName,
     x: width / 2 + (Math.random() - 0.5) * 5,
     y: height / 2 + (Math.random() - 0.5) * 5,
-    imageUrl: null // Nu avem imagine la căutare inițială (încă)
+    imageUrl: null // Imaginea se va lua eventual la expandare, nu la căutare inițială
   };
   nodeData.push(newNode);
   console.log("Nod inițial adăugat pentru:", artistName);
@@ -147,36 +145,28 @@ function renderGraph() {
             expandNode(event, d);
           });
 
-        // Cercul exterior (contur) - Rămâne la r=28
+        // Cercul exterior (contur) - r=28
         g.append("circle")
           .attr("class", "outer-circle")
           .attr("r", 28)
-          .attr("fill", "transparent") // Fundal transparent sub imagine
+          .attr("fill", "transparent")
           .attr("stroke", "#aaa")
           .attr("stroke-width", 1);
 
-        // ADAUGAM IMAGINEA IN LOCUL CERCULUI INTERIOR
+        // Imaginea în loc de cerc interior
         g.append("image")
-          .attr("xlink:href", d => d.imageUrl || "") // Folosim URL-ul imaginii din date
-          // Ascundem elementul dacă nu există URL valid
+          .attr("xlink:href", d => d.imageUrl || "")
           .style("display", d => d.imageUrl ? null : "none")
-          .attr("width", clipPathRadius * 2)  // Lățime = diametru clip
-          .attr("height", clipPathRadius * 2) // Înălțime = diametru clip
-          .attr("x", -clipPathRadius)     // Centrare orizontală
-          .attr("y", -clipPathRadius)     // Centrare verticală
-          .attr("clip-path", "url(#clip-circle)"); // Aplicăm masca rotundă
+          .attr("width", clipPathRadius * 2)
+          .attr("height", clipPathRadius * 2)
+          .attr("x", -clipPathRadius)
+          .attr("y", -clipPathRadius)
+          .attr("clip-path", "url(#clip-circle)");
 
-        // Alternativ, dacă vrem un cerc alb SUB imagine (ca fallback):
-        // g.append("circle")
-        //   .attr("class", "inner-fallback")
-        //   .attr("r", clipPathRadius)
-        //   .attr("fill", d => d.imageUrl ? "none" : "white"); // Alb doar dacă NU avem imagine
+        g.append("title").text(d => d.id);
 
-        g.append("title").text(d => d.id); // Tooltip
-
-        // Textul nodului
         g.append("text")
-          .attr("dy", "-1.8em") // Poziția textului relativă la centru
+          .attr("dy", "-1.8em")
           .attr("text-anchor", "middle")
           .style("font-size", "10px")
           .style("fill", "#cccccc")
@@ -192,10 +182,9 @@ function renderGraph() {
         g.attr("transform", d => `translate(${d.x},${d.y})`);
         return g;
       },
-      update => { // Actualizăm și imaginea dacă nodul se modifică
+      update => {
           update.select("title").text(d => d.id);
           update.select("text").text(d => d.id);
-          // Actualizăm imaginea în caz că URL-ul se schimbă
           update.select("image")
                 .attr("xlink:href", d => d.imageUrl || "")
                 .style("display", d => d.imageUrl ? null : "none");
@@ -233,11 +222,7 @@ function expandNode(event, clickedNode) {
   if (!artistName) return;
 
   const clickedNodeElement = d3.select(event.currentTarget);
-  // Folosim un fill temporar diferit pt loading, poate semi-transparent?
-  clickedNodeElement.select("image").style("opacity", 0.5); // Facem imaginea faded
-  // Sau schimbăm conturul exterior:
-  // clickedNodeElement.select(".outer-circle").style("stroke", "yellow");
-
+  clickedNodeElement.select("image").style("opacity", 0.5); // Indicăm loading
 
   const limit = 5;
   const apiUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&limit=${limit}&format=json`;
@@ -258,18 +243,19 @@ function expandNode(event, clickedNode) {
     .then(data => {
       console.log("Date primite de la Last.fm (similar artists):", data);
 
-      // Resetăm aspectul nodului click-uit (dacă nu e eroare JSON)
+      // Resetăm aspectul nodului click-uit (opacitate)
       clickedNodeElement.select("image").style("opacity", 1);
-      // clickedNodeElement.select(".outer-circle").style("stroke", "#aaa");
-
 
       if (data.error) {
           console.error("Eroare returnată de API Last.fm în JSON:", data.message || data.error);
           clickedNodeElement.select("title").text(`Error: ${data.message || data.error}`);
-          // Putem adăuga un indicator vizual de eroare persistent? Ex: contur roșu
-          clickedNodeElement.select(".outer-circle").style("stroke", "red");
+          clickedNodeElement.select(".outer-circle").style("stroke", "red"); // Eroare -> contur roșu
           return;
+      } else {
+           // Resetăm conturul dacă a fost eroare înainte
+           clickedNodeElement.select(".outer-circle").style("stroke", "#aaa");
       }
+
 
       if (data.similarartists && data.similarartists.artist && Array.isArray(data.similarartists.artist)) {
         const similarArtists = data.similarartists.artist.filter(artist => artist.name !== artistName);
@@ -285,35 +271,28 @@ function expandNode(event, clickedNode) {
 
         const cx = clickedNode.x ?? width / 2;
         const cy = clickedNode.y ?? height / 2;
-        const radius = 100;
+        const radius = 100; // Raza de apariție pt noduri noi
 
         similarArtists.forEach((artist, index) => {
           const newId = artist.name;
           if (!existing.has(newId)) {
-            // --- Extragem URL Imagine ---
             let imageUrl = null;
             if (artist.image && Array.isArray(artist.image)) {
-                // Prioritizăm extralarge, apoi large, apoi medium
                 const sizes = ['extralarge', 'large', 'medium', 'small'];
                 for (const size of sizes) {
                     const imgObj = artist.image.find(img => img.size === size);
                     if (imgObj && imgObj['#text']) {
                         imageUrl = imgObj['#text'];
-                        break; // Am găsit o mărime, ieșim din for
+                        break;
                     }
                 }
             }
-            if (!imageUrl) {
-                console.warn(`URL imagine lipsă pentru: ${newId}`);
-                // Poți seta un URL default aici dacă vrei:
-                // imageUrl = 'path/to/default/placeholder.png';
-            }
-            // --- Sfârșit Extragere URL Imagine ---
+            if (!imageUrl) console.warn(`URL imagine lipsă pentru: ${newId}`);
 
             const angle = (2 * Math.PI / similarArtists.length) * index;
             const newNode = {
               id: newId,
-              imageUrl: imageUrl, // Salvăm URL-ul imaginii
+              imageUrl: imageUrl,
               x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 20,
               y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 20,
               fx: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 20,
@@ -338,13 +317,15 @@ function expandNode(event, clickedNode) {
           }
         });
 
-        delete clickedNode.fx;
-        delete clickedNode.fy;
+        // --- AM COMENTAT ACESTE LINII PENTRU A NU MAI ELIBERA NODUL PĂRINTE ---
+        // delete clickedNode.fx;
+        // delete clickedNode.fy;
+        // --- SFÂRȘIT COMENTARIU ---
 
         if (count > 0) {
           console.log("Redesenare grafic și repornire simulare...");
           renderGraph();
-          if(simulation) simulation.alpha(0.5).restart();
+          if(simulation) simulation.alpha(0.3).restart(); // Impuls mai mic acum
         } else {
            console.log("Nu au fost adăugați artiști sau legături noi.");
         }
@@ -352,26 +333,24 @@ function expandNode(event, clickedNode) {
       } else {
         console.log("API-ul Last.fm nu a returnat artiști similari în formatul așteptat pentru:", artistName, data);
         clickedNodeElement.select("title").text(`${artistName} (Invalid API response)`);
-        clickedNodeElement.select(".outer-circle").style("stroke", "orange"); // Folosim conturul pt warning
+        clickedNodeElement.select(".outer-circle").style("stroke", "orange");
       }
     })
     .catch(error => {
       console.error('A apărut o eroare în lanțul fetch:', error);
       clickedNodeElement.select("title").text(`${artistName} (Error: ${error.message})`);
-      clickedNodeElement.select(".outer-circle").style("stroke", "red"); // Folosim conturul pt eroare
+      clickedNodeElement.select(".outer-circle").style("stroke", "red");
     })
     .finally(() => {
         console.log("Apelul API finalizat pentru:", artistName);
-        // Resetăm opacitatea imaginii sau conturul după un timp, doar dacă nu e eroare
+        // Resetăm opacitatea imaginii după un timp, doar dacă nu e eroare
         setTimeout(() => {
             const currentStroke = clickedNodeElement.select(".outer-circle").style("stroke");
-            // Resetăm opacitatea imaginii
-            clickedNodeElement.select("image").style("opacity", 1);
-            // Resetăm conturul doar dacă nu e roșu/portocaliu (semn de eroare/warning)
+             clickedNodeElement.select("image").style("opacity", 1);
             if (currentStroke !== 'red' && currentStroke !== 'orange') {
                  clickedNodeElement.select(".outer-circle").style("stroke", "#aaa");
             }
-        }, 1500);
+        }, 1000); // Redus timpul de așteptare puțin
     });
 }
 // --- SFÂRȘIT FUNCȚIE expandNode MODIFICATĂ ---
@@ -386,19 +365,22 @@ function drag(simulation) {
 
   function dragstarted(event, d) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
-    d.fx = d.x;
+    d.fx = d.x; // Salvăm poziția curentă ca fixă
     d.fy = d.y;
+    // Dezactivăm temporar zoom/pan pe SVG cât timp tragem un nod
+    // pentru a evita conflicte de evenimente
     svg.on(".zoom", null);
   }
   function dragged(event, d) {
+    // Actualizăm poziția fixă pe măsură ce tragem
     d.fx = event.x;
     d.fy = event.y;
   }
   function dragended(event, d) {
-    if (!event.active) simulation.alphaTarget(0);
-    // d.fx = null; // Decomentează pentru a elibera nodul după drag
-    // d.fy = null;
-    svg.call(zoom); // Reactivăm zoom-ul
+    if (!event.active) simulation.alphaTarget(0); // Lăsăm simularea să se "liniștească"
+    // Lăsăm nodul fixat unde l-a lăsat utilizatorul (nu setăm fx/fy la null)
+    // Reactivăm comportamentul de zoom/pan pe SVG
+    svg.call(zoom);
   }
 
   return d3.drag()
@@ -407,4 +389,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v8 - Artwork) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v9 - Stabilitate + Coliziune) ------------
