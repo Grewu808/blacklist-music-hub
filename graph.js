@@ -56,8 +56,9 @@ d3.json("data.json").then(data => {
     }
     function dragended(event, d) {
       if (!event.active) simulation.alphaTarget(0);
-      d.fx = null;
-      d.fy = null;
+      // NU mai eliberam pozitia:
+      // d.fx = null;
+      // d.fy = null;
     }
     return d3.drag()
         .on("start", dragstarted)
