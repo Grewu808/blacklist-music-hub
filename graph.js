@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v6 - Pan & Zoom) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v7 - Bule mărite) ------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -18,11 +18,11 @@ let link = container.selectAll("line.link");
 let nodeGroup = container.selectAll("g.node");
 
 // --- Inițializare Simulare ---
-simulation = d3.forceSimulation(nodeData)
-  .force("link", d3.forceLink(linkData).distance(150).id(d => d.id))
-  .force("charge", d3.forceManyBody().strength(-400))
+simulation = d3.forceSimulation(nodeData) // Inițializăm cu date goale
+  .force("link", d3.forceLink(linkData).distance(170).id(d => d.id)) // Mărit puțin distanța default
+  .force("charge", d3.forceManyBody().strength(-450)) // Mărit puțin forța de respingere
   .force("center", d3.forceCenter(width / 2, height / 2))
-  .on("tick", ticked);
+  .on("tick", ticked); // Apelăm funcția ticked la fiecare pas al simulării
 
 // --- Inițializare Comportament Zoom ---
 const zoom = d3.zoom()
@@ -31,13 +31,10 @@ const zoom = d3.zoom()
 
 // Funcția care aplică transformarea de zoom/pan
 function zoomed(event) {
-    // event.transform conține informații despre translație (x, y) și scalare (k)
-    // Aplicăm această transformare grupului container
     container.attr("transform", event.transform);
 }
 
 // Aplicăm comportamentul de zoom pe elementul SVG principal
-// IMPORTANT: Facem asta o singură dată, la inițializare
 svg.call(zoom);
 console.log("Comportament Pan & Zoom atașat la SVG.");
 
@@ -74,10 +71,8 @@ function handleSearch() {
   linkData = [];
   if(simulation) simulation.stop();
 
-  // Ștergem elementele SVG vechi DIN CONTAINER
   container.selectAll("line.link").remove();
   container.selectAll("g.node").remove();
-  // Re-selectăm ca să fim siguri că sunt goale pt data viitoare
   link = container.selectAll("line.link");
   nodeGroup = container.selectAll("g.node");
   console.log("Graficul vechi a fost șters.");
@@ -86,16 +81,15 @@ function handleSearch() {
     id: artistName,
     x: width / 2 + (Math.random() - 0.5) * 5,
     y: height / 2 + (Math.random() - 0.5) * 5,
-    // fx: width / 2, // Poate nu mai vrem să îl fixăm inițial
+    // fx: width / 2, // Nu îl mai fixăm
     // fy: height / 2
   };
   nodeData.push(newNode);
   console.log("Nod inițial adăugat pentru:", artistName);
 
-  // Resetăm zoom-ul/pan-ul la starea inițială (identitate) la fiecare căutare nouă
+  // Resetăm zoom-ul/pan-ul la starea inițială
   svg.call(zoom.transform, d3.zoomIdentity);
   console.log("Zoom/Pan resetat.");
-
 
   renderGraph();
 }
@@ -105,7 +99,6 @@ function handleSearch() {
 
 // Funcția care actualizează pozițiile la fiecare pas al simulării
 function ticked() {
-  // Actualizăm pozițiile calculate de simulare, transformarea de zoom se aplică peste
   if (link) {
      link
        .attr("x1", d => d.source.x)
@@ -121,13 +114,13 @@ function ticked() {
 
 // Funcția care (re)desenează graficul
 function renderGraph() {
-  if (!svg || !container) { // Verificăm și containerul
+  if (!svg || !container) {
       console.error("Elementul SVG #viz sau containerul nu a fost găsit!");
       return;
   }
   console.log(`RenderGraph: Noduri=${nodeData.length}, Legături=${linkData.length}`);
 
-  // Links - selectăm din CONTAINER acum
+  // Links
   link = container.selectAll("line.link")
     .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
     .join("line")
@@ -136,7 +129,7 @@ function renderGraph() {
     .attr("stroke", "#555")
     .attr("stroke-opacity", 0.4);
 
-  // Nodes - selectăm din CONTAINER acum
+  // Nodes
   nodeGroup = container.selectAll("g.node")
     .data(nodeData, d => d.id)
     .join(
@@ -145,29 +138,31 @@ function renderGraph() {
           .attr("class", "node");
 
         g.on("click", (event, d) => {
-            // Prevenim ca zoom-ul sa fie declansat si el la click pe nod
             event.stopPropagation();
             expandNode(event, d);
           });
 
+        // Cercul exterior (contur) - MĂRIT
         g.append("circle")
           .attr("class", "outer-circle")
-          .attr("r", 24)
+          .attr("r", 28) // <<<<<<<<<<< MĂRIT (era 24)
           .attr("fill", "transparent")
           .attr("stroke", "#aaa")
           .attr("stroke-width", 1);
 
+        // Cercul interior (alb) - MĂRIT
         g.append("circle")
           .attr("class", "inner-circle")
-          .attr("r", 14)
+          .attr("r", 16) // <<<<<<<<<<< MĂRIT (era 14)
           .attr("fill", "white");
 
-        g.append("title").text(d => d.id);
+        g.append("title").text(d => d.id); // Tooltip
 
+        // Textul nodului
         g.append("text")
-          .attr("dy", "-1.5em")
+          .attr("dy", "-1.8em") // Ajustat puțin poziția verticală pentru raza mai mare
           .attr("text-anchor", "middle")
-          .style("font-size", "10px")
+          .style("font-size", "10px") // Poate vrei font mai mare acum?
           .style("fill", "#cccccc")
           .text(d => d.id);
 
@@ -184,6 +179,7 @@ function renderGraph() {
       update => {
           update.select("title").text(d => d.id);
           update.select("text").text(d => d.id);
+          // Actualizăm și razele dacă nodul există deja? Momentan nu.
           return update;
       },
       exit => {
@@ -223,9 +219,8 @@ function expandNode(event, clickedNode) {
       return;
   }
 
-  // Folosim d3.select(event.currentTarget) pentru a selecta grupul <g> click-uit
   const clickedNodeElement = d3.select(event.currentTarget);
-  clickedNodeElement.select(".inner-circle").style("fill", "#f0f0f0"); // Gri deschis temporar
+  clickedNodeElement.select(".inner-circle").style("fill", "#f0f0f0");
 
   const limit = 5;
   const apiUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&limit=${limit}&format=json`;
@@ -253,9 +248,7 @@ function expandNode(event, clickedNode) {
           return;
       }
 
-      // Resetăm culoarea nodului click-uit dacă API-ul a răspuns fără eroare JSON
        clickedNodeElement.select(".inner-circle").style("fill", "white");
-
 
       if (data.similarartists && data.similarartists.artist && Array.isArray(data.similarartists.artist)) {
         const similarArtists = data.similarartists.artist.filter(artist => artist.name !== artistName);
@@ -271,7 +264,7 @@ function expandNode(event, clickedNode) {
 
         const cx = clickedNode.x ?? width / 2;
         const cy = clickedNode.y ?? height / 2;
-        const radius = 80;
+        const radius = 100; // Mărit puțin raza de apariție a nodurilor noi
 
         similarArtists.forEach((artist, index) => {
           const newId = artist.name;
@@ -303,17 +296,15 @@ function expandNode(event, clickedNode) {
           }
         });
 
-        // Eliberăm nodul părinte din poziția fixă
         delete clickedNode.fx;
         delete clickedNode.fy;
 
         if (count > 0) {
           console.log("Redesenare grafic și repornire simulare...");
-          renderGraph(); // Redesenează graficul
-          if(simulation) simulation.alpha(0.5).restart(); // Dăm un impuls simulării
+          renderGraph();
+          if(simulation) simulation.alpha(0.5).restart();
         } else {
            console.log("Nu au fost adăugați artiști sau legături noi.");
-           // Revenim la culoarea albă dacă nu s-a adăugat nimic nou
            clickedNodeElement.select(".inner-circle").style("fill", "white");
         }
 
@@ -333,7 +324,7 @@ function expandNode(event, clickedNode) {
         //const nodeElement = d3.select(event.currentTarget); // Already have clickedNodeElement
         setTimeout(() => {
             const currentFill = clickedNodeElement.select(".inner-circle").style("fill");
-            if (currentFill === 'rgb(240, 240, 240)') { // Verificăm dacă e încă culoarea de loading (gri)
+            if (currentFill === 'rgb(240, 240, 240)') {
                  clickedNodeElement.select(".inner-circle").style("fill", "white");
             }
         }, 1500);
@@ -353,8 +344,7 @@ function drag(simulation) {
     if (!event.active) simulation.alphaTarget(0.3).restart();
     d.fx = d.x;
     d.fy = d.y;
-    // Oprim temporar zoom-ul în timpul drag-ului nodului
-    svg.on(".zoom", null);
+    svg.on(".zoom", null); // Dezactivăm zoom/pan în timpul drag-ului nodului
   }
   function dragged(event, d) {
     d.fx = event.x;
@@ -363,7 +353,7 @@ function drag(simulation) {
   function dragended(event, d) {
     if (!event.active) simulation.alphaTarget(0);
     // Lăsăm nodul fixat implicit
-    // d.fx = null; // Decomentează pentru a elibera nodul după drag
+    // d.fx = null;
     // d.fy = null;
     // Reactivăm zoom-ul după ce terminăm drag-ul nodului
     svg.call(zoom);
@@ -375,7 +365,7 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// --- Apel inițial pentru a desena 'canvas-ul' gol sau starea inițială ---
-// renderGraph(); // Nu mai e nevoie explicit aici, se apelează după attach listeners sau în handleSearch
+// --- Apel inițial (nu mai este necesar explicit aici) ---
+// renderGraph();
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v6 - Pan & Zoom) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v7 - Bule mărite) ------------
