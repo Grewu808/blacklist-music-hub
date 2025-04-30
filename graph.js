@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v10 - Mișcare + Coliziune Ajustată) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v11 - Prioritate Imagini Mici/Medii) ------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -24,12 +24,12 @@ let simulation;
 let link = container.selectAll("line.link");
 let nodeGroup = container.selectAll("g.node");
 
-// --- Inițializare Simulare (forțe ajustate) ---
+// --- Inițializare Simulare ---
 simulation = d3.forceSimulation(nodeData)
-  .force("link", d3.forceLink(linkData).distance(170).id(d => d.id)) // Distanța link
-  .force("charge", d3.forceManyBody().strength(-550)) // <<< AJUSTATA Respingerea (-450 -> -550)
-  .force("center", d3.forceCenter(width / 2, height / 2)) // Centrare
-  .force("collide", d3.forceCollide().radius(35)) // <<< AJUSTATA Coliziunea (30 -> 35)
+  .force("link", d3.forceLink(linkData).distance(170).id(d => d.id))
+  .force("charge", d3.forceManyBody().strength(-550))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collide", d3.forceCollide().radius(35)) // Mărimea coliziunii
   .on("tick", ticked);
 console.log("Simulare inițializată cu forțe ajustate.");
 
@@ -87,7 +87,7 @@ function handleSearch() {
     id: artistName,
     x: width / 2 + (Math.random() - 0.5) * 5,
     y: height / 2 + (Math.random() - 0.5) * 5,
-    imageUrl: null
+    imageUrl: null // Imaginea se va lua la expandare
   };
   nodeData.push(newNode);
   console.log("Nod inițial adăugat pentru:", artistName);
@@ -153,15 +153,15 @@ function renderGraph() {
           .attr("stroke", "#aaa")
           .attr("stroke-width", 1);
 
-        // Imaginea
+        // Imaginea în loc de cerc interior
         g.append("image")
-          .attr("xlink:href", d => d.imageUrl || "")
-          .style("display", d => d.imageUrl ? null : "none")
+          .attr("xlink:href", d => d.imageUrl || "") // Folosim URL-ul imaginii din date
+          .style("display", d => d.imageUrl ? null : "none") // Ascundem dacă nu avem URL
           .attr("width", clipPathRadius * 2)
           .attr("height", clipPathRadius * 2)
           .attr("x", -clipPathRadius)
           .attr("y", -clipPathRadius)
-          .attr("clip-path", "url(#clip-circle)");
+          .attr("clip-path", "url(#clip-circle)"); // Aplicăm masca rotundă
 
         g.append("title").text(d => d.id); // Tooltip
 
@@ -191,7 +191,7 @@ function renderGraph() {
           return update;
       },
       exit => {
-          // console.log("Nod eliminat din DOM:", d.id); // Comentat
+          // console.log("Nod eliminat din DOM:", d.id);
           exit.transition().duration(300).attr("opacity", 0).remove();
       }
     );
@@ -201,7 +201,7 @@ function renderGraph() {
       simulation.nodes(nodeData);
       simulation.force("link").links(linkData);
       if (simulation.alpha() < 0.1) {
-          simulation.alpha(0.3).restart(); // Reactivăm simularea dacă s-a oprit
+          simulation.alpha(0.3).restart();
           console.log("Simulare reactivată.");
       } else {
            console.log("Simulare actualizată (noduri/legături).");
@@ -212,7 +212,7 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (cu mișcare reactivată și alpha mic) ---
+// --- FUNCȚIA expandNode (prioritate imagini medium/large) ---
 function expandNode(event, clickedNode) {
   console.log("Se extinde nodul:", clickedNode.id);
 
@@ -251,8 +251,9 @@ function expandNode(event, clickedNode) {
           clickedNodeElement.select(".outer-circle").style("stroke", "red");
           return;
       } else {
-           clickedNodeElement.select(".outer-circle").style("stroke", "#aaa"); // Resetăm conturul
+           clickedNodeElement.select(".outer-circle").style("stroke", "#aaa");
       }
+
 
       if (data.similarartists && data.similarartists.artist && Array.isArray(data.similarartists.artist)) {
         const similarArtists = data.similarartists.artist.filter(artist => artist.name !== artistName);
@@ -273,26 +274,32 @@ function expandNode(event, clickedNode) {
         similarArtists.forEach((artist, index) => {
           const newId = artist.name;
           if (!existing.has(newId)) {
+            // --- Extragem URL Imagine (prioritate M, L, S, XL) ---
             let imageUrl = null;
             if (artist.image && Array.isArray(artist.image)) {
-                const sizes = ['extralarge', 'large', 'medium', 'small'];
+                // <<< MODIFICAT: Ordinea de căutare a mărimilor
+                const sizes = ['medium', 'large', 'small', 'extralarge', 'mega'];
                 for (const size of sizes) {
-                    const imgObj = artist.image.find(img => img.size === size);
-                    if (imgObj && imgObj['#text']) {
-                        imageUrl = imgObj['#text'];
-                        break;
+                    // Căutăm obiectul imagine care are mărimea dorită și conține URL (#text)
+                    const imgObj = artist.image.find(img => img.size === size && img['#text']);
+                    if (imgObj) {
+                        imageUrl = imgObj['#text']; // Salvăm URL-ul
+                        console.log(`Găsit imagine ${size} pentru ${newId}`);
+                        break; // Oprim căutarea la prima mărime găsită
                     }
                 }
             }
-            if (!imageUrl) console.warn(`URL imagine lipsă pentru: ${newId}`);
+            if (!imageUrl) {
+                console.warn(`URL imagine lipsă pentru: ${newId}`);
+            }
+            // --- Sfârșit Extragere URL Imagine ---
 
             const angle = (2 * Math.PI / similarArtists.length) * index;
             const newNode = {
               id: newId,
-              imageUrl: imageUrl,
+              imageUrl: imageUrl, // Salvăm URL-ul (poate fi null)
               x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 20,
               y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 20,
-              // Nu mai setăm fx/fy aici, lăsăm simularea să le așeze
             };
             nodeData.push(newNode);
             linkData.push({ source: clickedNode.id, target: newId });
@@ -313,20 +320,16 @@ function expandNode(event, clickedNode) {
           }
         });
 
-        // --- REACTIVAT ELIBERAREA NODULUI PĂRINTE ---
-        // Eliberăm nodul părinte din poziția fixă (dacă era fixat de drag)
-        // pentru a permite simulării să îl reașeze cu noii vecini
+        // Eliberăm nodul părinte
         delete clickedNode.fx;
         delete clickedNode.fy;
         console.log("Nod părinte eliberat (fx/fy șterse).");
-        // --- SFÂRȘIT REACTIVARE ---
 
 
         if (count > 0) {
           console.log("Redesenare grafic și repornire simulare (cu alpha mic)...");
           renderGraph();
-          // Repornim simularea cu un impuls mic pentru a integra noile noduri lin
-          if(simulation) simulation.alpha(0.1).restart(); // <<< AJUSTATA Repornirea (era 0.3 sau 0.5)
+          if(simulation) simulation.alpha(0.1).restart(); // Impuls mic
         } else {
            console.log("Nu au fost adăugați artiști sau legături noi.");
         }
@@ -347,7 +350,8 @@ function expandNode(event, clickedNode) {
         const nodeElement = d3.select(event.currentTarget);
         setTimeout(() => {
             const currentStroke = nodeElement.select(".outer-circle").style("stroke");
-            nodeElement.select("image").style("opacity", 1); // Resetăm opacitatea oricum
+            nodeElement.select("image").style("opacity", 1);
+            // Resetăm conturul doar dacă nu e roșu/portocaliu
             if (currentStroke !== 'red' && currentStroke !== 'orange') {
                  nodeElement.select(".outer-circle").style("stroke", "#aaa");
             }
@@ -376,7 +380,6 @@ function drag(simulation) {
   }
   function dragended(event, d) {
     if (!event.active) simulation.alphaTarget(0);
-    // Lăsăm nodul fixat implicit după drag, DAR va fi eliberat la expandare acum
     svg.call(zoom); // Reactivăm zoom-ul
   }
 
@@ -386,4 +389,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v10 - Mișcare + Coliziune Ajustată) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v11 - Prioritate Imagini Mici/Medii) ------------
