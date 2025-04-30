@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harta Blacklist</title>
   <link rel="stylesheet" href="style.css"/> <script src="https://d3js.org/d3.v6.min.js"></script>
   <style>
@@ -14,6 +15,7 @@
           background-color: #111; /* Fundal închis (ca în poze) */
           color: #ccc; /* Culoare text default deschisă */
           font-family: sans-serif; /* Un font simplu */
+          overflow: hidden; /* Prevenim scroll-ul pe body */
       }
       /* Containerul pentru căutare */
       .search-container {
@@ -37,7 +39,14 @@
       #viz {
           flex-grow: 1; /* Lăsăm SVG-ul să ocupe spațiul rămas */
           width: 100%; /* Asigurăm lățimea completă */
-          /* height este setat de flex-grow, nu mai e nevoie de 100% aici */
+          cursor: grab; /* Cursor inițial pt pan/zoom */
+      }
+       #viz:active {
+           cursor: grabbing; /* Cursor în timpul drag/pan */
+      }
+      /* Stil opțional pentru textul nodurilor */
+      g.node text {
+          pointer-events: none; /* Textul să nu interfereze cu click-ul pe cerc */
       }
   </style>
 </head>
@@ -48,6 +57,7 @@
     <input type="text" id="artist-search-input" placeholder="Scrie numele artistului...">
     <button id="artist-search-button">Caută</button>
   </div>
+
   <svg id="viz"></svg> <script src="graph.js"></script>
 
 </body>
