@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v14 - Eliminat setTimeout din finally) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v16 - Verificare URL Imagine Non-Gol) ------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -155,7 +155,7 @@ function renderGraph() {
 
         // Imaginea
         g.append("image")
-          .attr("xlink:href", d => d.imageUrl || "")
+          .attr("href", d => d.imageUrl || "") // Folosim href (mai modern)
           .style("display", d => d.imageUrl ? null : "none")
           .attr("width", clipPathRadius * 2)
           .attr("height", clipPathRadius * 2)
@@ -186,11 +186,9 @@ function renderGraph() {
           update.select("title").text(d => d.id);
           update.select("text").text(d => d.id);
           update.select("image")
-                .attr("xlink:href", d => d.imageUrl || "")
+                .attr("href", d => d.imageUrl || "") // Actualizăm și href aici
                 .style("display", d => d.imageUrl ? null : "none");
-          // Resetăm stroke la update, în caz că a rămas roșu/portocaliu de la o eroare anterioară
-          // pe același nod care acum primește un update (mai puțin probabil, dar preventiv)
-          update.select(".outer-circle")
+          update.select(".outer-circle") // Actualizăm și stroke-ul la update
                 .attr("stroke", d => d.errorState === 'error' ? 'red' : (d.errorState === 'warning' ? 'orange' : '#aaa'));
           return update;
       },
@@ -215,7 +213,7 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (fără setTimeout în finally) ---
+// --- FUNCȚIA expandNode (cu verificare URL imagine non-gol) ---
 function expandNode(event, clickedNode) {
   console.log("Se extinde nodul:", clickedNode.id);
 
@@ -229,10 +227,10 @@ function expandNode(event, clickedNode) {
   if (!clickedNodeElementSelection || clickedNodeElementSelection.empty()) {
       console.error("Nu s-a putut selecta elementul nodului click-uit inițial.");
   } else {
-       clickedNodeElementSelection.select("image").style("opacity", 0.5); // Indicator loading
+       clickedNodeElementSelection.select("image").style("opacity", 0.5);
        clickedNodeElementSelection.select(".outer-circle").style("stroke", "#f0f0f0");
   }
-  delete clickedNode.errorState; // Resetăm starea de eroare
+  delete clickedNode.errorState;
 
   const limit = 5;
   const apiUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${apiKey}&limit=${limit}&format=json`;
@@ -250,8 +248,12 @@ function expandNode(event, clickedNode) {
       }
       return response.json();
     })
-    .then(data => { // Success path
+    .then(data => {
       console.log("Date primite de la Last.fm (similar artists):", data);
+
+      if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+          clickedNodeElementSelection.select("image").style("opacity", 1);
+      }
 
       if (data.error) {
           console.error("Eroare returnată de API Last.fm în JSON:", data.message || data.error);
@@ -260,11 +262,11 @@ function expandNode(event, clickedNode) {
               clickedNodeElementSelection.select(".outer-circle").style("stroke", "red");
           }
           clickedNode.errorState = 'error';
-          return; // Important să oprim aici
-      }
-      // Dacă nu e eroare, resetăm conturul imediat
-      if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-          clickedNodeElementSelection.select(".outer-circle").style("stroke", "#aaa");
+          return;
+      } else {
+           if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+                clickedNodeElementSelection.select(".outer-circle").style("stroke", "#aaa");
+           }
       }
 
 
@@ -288,15 +290,25 @@ function expandNode(event, clickedNode) {
         similarArtists.forEach((artist, index) => {
           const newId = artist.name;
           if (!existing.has(newId)) {
+            // --- Extragem URL Imagine (verificare non-gol) ---
             let imageUrl = null;
             if (artist.image && Array.isArray(artist.image)) {
                 const sizes = ['medium', 'large', 'small', 'extralarge', 'mega'];
                 for (const size of sizes) {
-                    const imgObj = artist.image.find(img => img.size === size && img['#text']);
-                    if (imgObj) { imageUrl = imgObj['#text']; console.log(`Găsit imagine ${size} pentru ${newId}`); break; }
+                    // MODIFICAT: Verificăm și dacă #text nu e gol
+                    const imgObj = artist.image.find(img => img.size === size && img['#text'] && img['#text'].trim() !== '');
+                    if (imgObj) {
+                        imageUrl = imgObj['#text'];
+                        console.log(`Găsit imagine ${size} pentru ${newId}`);
+                        break;
+                    }
                 }
             }
-            if (!imageUrl) console.warn(`URL imagine lipsă pentru: ${newId}`);
+            if (!imageUrl) {
+                 console.warn(`URL imagine lipsă sau gol pentru: ${newId}`);
+            }
+            // --- Sfârșit Extragere URL Imagine ---
+
             const angle = (2 * Math.PI / similarArtists.length) * index;
             const newNode = { id: newId, imageUrl: imageUrl, x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 20, y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 20 };
             nodeData.push(newNode);
@@ -326,31 +338,32 @@ function expandNode(event, clickedNode) {
         }
       }
     })
-    .catch(error => { // Catch fetch errors OR errors thrown from .then()
+    .catch(error => {
       console.error('A apărut o eroare în lanțul fetch:', error);
        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
           clickedNodeElementSelection.select("title").text(`${artistName} (Error: ${error.message})`);
-          // Setăm stroke roșu aici în caz de eroare
           clickedNodeElementSelection.select(".outer-circle").style("stroke", "red");
           clickedNode.errorState = 'error';
        }
     })
-    .finally(() => { // Runs regardless of success or error in the chain
+    .finally(() => {
         console.log("Apelul API finalizat pentru:", artistName);
-        // Resetăm opacitatea imaginii imediat în finally
-        // Verificăm dacă elementul nodului încă există
-         const finalNodeElement = nodeGroup.filter(d => d.id === clickedNode.id);
-         if (finalNodeElement && !finalNodeElement.empty()) {
-             const imageElement = finalNodeElement.select("image");
-             if (imageElement.node()) {
-                 imageElement.style("opacity", 1);
-             }
-             // Conturul exterior este deja setat la #aaa în .then (dacă nu e eroare JSON)
-             // sau la roșu/portocaliu în .then/.catch dacă sunt erori.
-             // Nu mai resetăm aici stroke-ul, îl lăsăm cum a fost setat mai sus.
-         } else {
-             console.warn(`Nu s-a putut re-selecta nodul [${clickedNode.id}] în finally.`);
-         }
+        // Resetăm stilurile folosind selecția inițială, FĂRĂ setTimeout
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            const imageElement = clickedNodeElementSelection.select("image");
+            if (imageElement.node()) {
+               imageElement.style("opacity", 1);
+            }
+            // Resetăm conturul DOAR dacă nodul NU este marcat cu eroare/warning
+            if (!clickedNode.errorState) {
+                const outerCircle = clickedNodeElementSelection.select(".outer-circle");
+                 if (outerCircle.node()) {
+                    outerCircle.style("stroke", "#aaa");
+                 }
+            }
+        } else {
+             console.warn(`Selecția inițială a nodului [${clickedNode.id}] nu era validă în finally.`);
+        }
     });
 }
 // --- SFÂRȘIT FUNCȚIE expandNode ---
@@ -384,4 +397,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v14 - Eliminat setTimeout din finally) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v16 - Verificare URL Imagine Non-Gol) ------------
