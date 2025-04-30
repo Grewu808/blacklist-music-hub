@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v17 - Comentat display:none pt imagini) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (modificat v18 - Logare imageUrl în renderGraph) ------------
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -87,7 +87,7 @@ function handleSearch() {
     id: artistName,
     x: width / 2 + (Math.random() - 0.5) * 5,
     y: height / 2 + (Math.random() - 0.5) * 5,
-    imageUrl: null
+    imageUrl: null // Imaginea se va lua la expandare
   };
   nodeData.push(newNode);
   console.log("Nod inițial adăugat pentru:", artistName);
@@ -140,33 +140,34 @@ function renderGraph() {
         const g = enter.append("g")
           .attr("class", "node");
 
+        // LOGARE imageUrl LA INTRARE NOD NOU
+        enter.each(d => console.log(`Enter Node [${d.id}] - Image URL:`, d.imageUrl));
+
         g.on("click", (event, d) => {
             event.stopPropagation();
             expandNode(event, d);
           });
 
-        // Cercul exterior (contur) - r=28
         g.append("circle")
           .attr("class", "outer-circle")
           .attr("r", 28)
           .attr("fill", "transparent")
-          .attr("stroke", "#aaa") // Setăm stroke inițial normal
+          .attr("stroke", "#aaa")
           .attr("stroke-width", 1);
 
-        // Imaginea
         g.append("image")
-          .attr("href", d => d.imageUrl || "") // Folosim href
-          // .style("display", d => d.imageUrl ? null : "none") // <<< COMENTAT TEMPORAR
+          .attr("href", d => d.imageUrl || "")
+          // .style("display", d => d.imageUrl ? null : "none") // <<< Rămâne comentat deocamdată
           .attr("width", clipPathRadius * 2)
           .attr("height", clipPathRadius * 2)
           .attr("x", -clipPathRadius)
           .attr("y", -clipPathRadius)
           .attr("clip-path", "url(#clip-circle)");
 
-        g.append("title").text(d => d.id); // Tooltip
+        g.append("title").text(d => d.id);
 
         g.append("text")
-          .attr("dy", "-1.8em") // Poziția textului
+          .attr("dy", "-1.8em")
           .attr("text-anchor", "middle")
           .style("font-size", "10px")
           .style("fill", "#cccccc")
@@ -178,16 +179,19 @@ function renderGraph() {
             console.warn("Simularea nu gata la crearea nodului, drag nu a fost atașat:", d.id);
         }
 
-        console.log("Nod nou (grup) creat în DOM.");
+        // console.log("Nod nou (grup) creat în DOM."); // Log inițial comentat pt claritate
         g.attr("transform", d => `translate(${d.x},${d.y})`);
         return g;
       },
       update => {
+          // LOGARE imageUrl LA UPDATE NOD EXISTENT
+          update.each(d => console.log(`Update Node [${d.id}] - Image URL:`, d.imageUrl));
+
           update.select("title").text(d => d.id);
           update.select("text").text(d => d.id);
           update.select("image")
                 .attr("href", d => d.imageUrl || "") // Actualizăm și href aici
-                // .style("display", d => d.imageUrl ? null : "none") // <<< COMENTAT TEMPORAR
+                // .style("display", d => d.imageUrl ? null : "none") // <<< Rămâne comentat
           update.select(".outer-circle")
                 .attr("stroke", d => d.errorState === 'error' ? 'red' : (d.errorState === 'warning' ? 'orange' : '#aaa'));
           return update;
@@ -213,7 +217,7 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (cu verificare URL imagine non-gol) ---
+// --- FUNCȚIA expandNode (cu extragere imageUrl) ---
 function expandNode(event, clickedNode) {
   console.log("Se extinde nodul:", clickedNode.id);
 
@@ -338,7 +342,6 @@ function expandNode(event, clickedNode) {
           clickedNodeElementSelection.select(".outer-circle").style("stroke", "red");
           clickedNode.errorState = 'error';
        }
-       // Resetăm opacitatea imaginii și aici în caz de eroare fetch
         if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
            const imageElement = clickedNodeElementSelection.select("image");
             if (imageElement.node()) { imageElement.style("opacity", 1); }
@@ -346,7 +349,21 @@ function expandNode(event, clickedNode) {
     })
     .finally(() => {
         console.log("Apelul API finalizat pentru:", artistName);
-        // Nu mai resetăm stiluri aici, se face în .then sau .catch
+        // Resetăm stilurile folosind selecția inițială, FĂRĂ setTimeout
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            const imageElement = clickedNodeElementSelection.select("image");
+            if (imageElement.node()) {
+               imageElement.style("opacity", 1);
+            }
+            if (!clickedNode.errorState) {
+                const outerCircle = clickedNodeElementSelection.select(".outer-circle");
+                 if (outerCircle.node()) {
+                    outerCircle.style("stroke", "#aaa");
+                 }
+            }
+        } else {
+             console.warn(`Selecția inițială a nodului [${clickedNode.id}] nu era validă în finally.`);
+        }
     });
 }
 // --- SFÂRȘIT FUNCȚIE expandNode ---
@@ -380,4 +397,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v17 - Comentat display:none pt imagini) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (modificat v18 - Logare imageUrl în renderGraph) ------------
