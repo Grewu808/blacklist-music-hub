@@ -1,1 +1,1 @@
-{"nodes": [{"id": "Nightmares on Wax"}, {"id": "DJ Cam"}, {"id": "Thievery Corporation"}, {"id": "Tosca"}, {"id": "Kruder & Dorfmeister"}], "links": [{"source": "Nightmares on Wax", "target": "DJ Cam"}, {"source": "Nightmares on Wax", "target": "Thievery Corporation"}, {"source": "DJ Cam", "target": "Tosca"}, {"source": "Kruder & Dorfmeister", "target": "Tosca"}]}
+{}
