@@ -1,0 +1,44 @@
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background-color: #0f0f0f;
+  color: #ffffff;
+  font-family: Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+
+@media (min-width: 800px) {
+  html, body {
+    overflow: auto;
+    touch-action: auto;
+  }
+}
+
+.container {
+  text-align: center;
+}
+.logo-img {
+  width: 220px;
+  margin-bottom: 10px;
+}
+.logo-text {
+  font-size: 1.4em;
+  font-weight: bold;
+  margin-bottom: 2em;
+  letter-spacing: 2px;
+}
+.start-button {
+  background-color: #ffffff;
+  color: #0f0f0f;
+  padding: 10px 20px;
+  font-size: 1em;
+  border: none;
+  cursor: pointer;
+}
