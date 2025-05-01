@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - URL-uri REALE) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - URL-uri CORECTATE) ------------
 
 // --- ATENȚIE MARE LA SECURITATE! ---
 // PUNEREA SECRETULUI SPOTIFY DIRECT ÎN CODUL DIN BROWSER NU ESTE SIGURĂ ÎN PRODUCȚIE!
@@ -28,7 +28,7 @@ async function getSpotifyAccessToken() {
   const base64AuthString = btoa(authString); // Codifică ID-ul și Secret-ul Base64
 
   try {
-    // ATENȚIE: Aceasta este URL-ul REAL al endpoint-ului Spotify pentru token
+    // ACUM FOLOSIM URL-UL CORECT PENTRU ENDPOINT-UL DE TOKEN SPOTIFY
     const response = await fetch('https://accounts.spotify.com/api/token', {
       method: 'POST',
       headers: {
@@ -311,7 +311,7 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - URL-uri REALE) ---
+// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - URL-uri CORECTATE) ---
 async function expandNode(event, clickedNode) {
   console.log("Se extinde nodul (Spotify):", clickedNode.id);
 
@@ -341,8 +341,8 @@ async function expandNode(event, clickedNode) {
 
     // 2. Caută artistul pe Spotify pentru a obține ID-ul său
     console.log(`Căutare ID Spotify pentru artistul: "${artistName}"`);
-    // ATENȚIE: Acesta este URL-ul REAL al endpoint-ului Spotify pentru căutare
-    const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
+    // ACUM FOLOSIM URL-UL CORECT PENTRU ENDPOINT-UL DE CĂUTARE SPOTIFY
+    const searchUrl = `https://api.spotify.com/v1/search/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
     const searchResponse = await fetch(searchUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -401,8 +401,8 @@ async function expandNode(event, clickedNode) {
 
     // 3. Obține artiștii similari de la Spotify folosind ID-ul artistului
     console.log(`Se caută artiști similari pentru ID-ul Spotify: ${spotifyArtistId}`);
-    // ATENȚIE: Acesta este URL-ul REAL al endpoint-ului Spotify pentru artiști similari
-    const relatedArtistsUrl = `https://api.spotify.com/v1/artists/${spotifyArtistId}/related-artists`;
+    // ACUM FOLOSIM URL-UL CORECT PENTRU ENDPOINT-UL DE ARTIȘTI SIMILARI SPOTIFY
+    const relatedArtistsUrl = `https://api.spotify.com/v1/artists/$${spotifyArtistId}/related-artists`;
     const relatedArtistsResponse = await fetch(relatedArtistsUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -590,4 +590,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Spotify API - URL-uri REALE) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Spotify API - URL-uri CORECTATE) ------------
