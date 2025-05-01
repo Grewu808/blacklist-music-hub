@@ -4,12 +4,49 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Blacklist Music Hub</title>
-  <link rel="stylesheet" href="style.css"/>
+  <link rel="stylesheet" href="style.css"/> <style>
+    /* Stiluri pentru body și container */
+    body {
+        margin: 0; /* Scoatem marginea default */
+        background-color: #111; /* Fundal întunecat */
+        color: #ccc; /* Culoare text deschisă */
+        font-family: sans-serif;
+    }
+    .container {
+        text-align: center; /* Centrează conținutul (butonul) */
+        padding: 5vh 15px 15px 15px; /* Spațiu sus și pe laterale */
+    }
+    /* Stil pentru logo */
+    .homepage-logo {
+      display: block; /* Necesare pt margin auto */
+      margin-left: auto;
+      margin-right: auto;
+      margin-bottom: 30px; /* Spațiu între logo și buton */
+      max-width: 60%; /* Limitează lățimea logo-ului */
+      height: auto; /* Păstrează proporțiile */
+    }
+    /* Stilizare exemplu pentru buton */
+    .start-button {
+        padding: 15px 30px;
+        font-size: 1.2em;
+        font-weight: bold;
+        color: #eee;
+        background-color: #333;
+        border: 1px solid #555;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s; /* Efect la hover */
+    }
+    .start-button:hover {
+        background-color: #444;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <div class="logo-text">BLACKLIST MUSIC HUB</div>
+    <img src="logo.png" alt="Blacklist Music Hub Logo" class="homepage-logo">
+
     <button onclick="location.href='map.html'" class="start-button">Incepe explorarea</button>
   </div>
-</body>
+  </body>
 </html>
