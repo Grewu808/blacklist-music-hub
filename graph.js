@@ -1,24 +1,24 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - Încercare finală URL-uri Corectate + Automatizat cu Secret) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Hybrid Last.fm + Spotify - CU Secret în Frontend) ------------
 
-// --- Risc Major de Securitate! NU folosiți această versiune pentru un site public! ---
-// Client Secret-ul este expus în acest cod.
-// Folosiți doar pentru testare locală sau beta PRIVAT.
-// Pentru producție, mutați obținerea tokenului pe un server (backend).
+// --- ATENȚIE MARE LA SECURITATE! ACEASTA NU ESTE SIGUR PENTRU UN SITE PUBLIC! ---
+// Client Secret-ul Spotify este inclus în acest cod și va fi vizibil oricui accesează site-ul tău.
+// Folosiți această versiune DOAR pentru testare locală sau beta PRIVATĂ.
+// PENTRU VARIANTA PUBLICĂ/FINALĂ, MUTĂ OBȚINEREA TOKENULUI SPOTIFY PE UN SERVER (BACKEND).
+
+// Cheia API Last.fm (Acesta poate fi public)
+const lastFmApiKey = 'fe14d9e2ae87da47a1642aab12b6f52b';
+
+// Credențialele API Spotify (Acesta poate fi public, dar Secretul NU)
 const spotifyClientId = '38d179166ca140e498c596340451c1b5'; // <-- ID-ul tău Spotify
-const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (ATENȚIE MAXIMĂ! EXPUS!)
+const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (RISC MAJOR: EXPUS aici!)
 
-// Adresa de bază a API-ului Spotify (încercare de a o construi diferit)
-// Acesta ar trebui să fie https://api.spotify.com, dar folosesc placeholder din limitări.
-// Dacă acest placeholder nu funcționează, SUNTEM BLOCAȚI din cauza limitărilor mele.
-const spotifyApiBaseUrl = 'https://api.spotify.com/v1';
 
-// Variabilă globală pentru a stoca tokenul de acces Spotify și momentul expirării
+// Variabile globale pentru a stoca tokenul de acces Spotify și momentul expirării
 let spotifyAccessToken = null;
 let spotifyTokenExpiryTime = 0; // Momentul la care expiră tokenul (timestamp în milisecunde)
 
 // --- Funcție pentru a obține sau reînnoi tokenul Spotify (Automatizat - CU Secret în Frontend) ---
-// ACEASTĂ IMPLEMENTARE NU ESTE SIGURĂ PENTRU UN SITE PUBLIC.
-// Expune Secretul Clientului Spotify în codul sursă vizibil în browser.
+// ACEASTĂ IMPLEMENTARE NU ESTE SIGURĂ PENTRU UN SITE PUBLIC. Expune Secretul Clientului.
 async function getSpotifyAccessToken() {
   // Verifică dacă avem deja un token și dacă este încă valid
   if (spotifyAccessToken && Date.now() < spotifyTokenExpiryTime) {
@@ -32,10 +32,9 @@ async function getSpotifyAccessToken() {
   const base64AuthString = btoa(authString);
 
   try {
-    // ACESTA ESTE ENDPOINT-UL REAL SPOTIFY PENTRU OBȚINEREA TOKENULUI
-    // Construit folosind adresa de bază pentru autentificare
-    const authBaseUrl = 'https://accounts.spotify.com/api/token'; // Adresa de bază pentru autentificare
-    const response = await fetch(`${authBaseUrl}`, { // Atenție: Endpointul de token nu are /v1/
+    // ENDPOINT-UL REAL SPOTIFY PENTRU OBȚINEREA TOKENULUI
+    const authBaseUrl = 'https://accounts.spotify.com/api/token';
+    const response = await fetch(`${authBaseUrl}`, {
       method: 'POST',
       headers: {
         'Authorization': `Basic ${base64AuthString}`,
@@ -49,7 +48,7 @@ async function getSpotifyAccessToken() {
       const errorMessage = errorBody?.error_description || `HTTP error! status: ${response.status}`;
       console.error("Eroare la obținerea tokenului Spotify:", errorMessage, errorBody);
       // Alertăm utilizatorul despre problema de autentificare
-      alert("Eroare la conectarea cu Spotify pentru autentificare. Verifică consola pentru detalii (posibil ID/Secret incorect).");
+      alert("Eroare la conectarea cu Spotify pentru autentificare. Verifică consola pentru detalii.");
       throw new Error(`Could not get Spotify access token: ${errorMessage}`);
     }
 
@@ -68,6 +67,10 @@ async function getSpotifyAccessToken() {
     throw error; // Propagă eroarea mai departe
   }
 }
+
+// Adresa de bază a API-ului Spotify (pentru Search și alte endpoint-uri)
+// Acesta ar trebui să fie https://api.spotify.com/v1/search/v1/search, dar folosesc placeholder.
+const spotifyApiBaseUrl = 'https://api.spotify.com/v1/search/v1/search';
 
 
 const width = window.innerWidth;
@@ -319,9 +322,9 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - Încercare finală URL-uri Corectate + Automatizat) ---
+// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU HYBRID LAST.FM + SPOTIFY) ---
 async function expandNode(event, clickedNode) {
-  console.log("Se extinde nodul (Spotify):", clickedNode.id);
+  console.log("Se extinde nodul (Hybrid Last.fm + Spotify):", clickedNode.id);
 
   const artistName = clickedNode.id;
   if (!artistName) {
@@ -339,216 +342,193 @@ async function expandNode(event, clickedNode) {
   delete clickedNode.errorState; // Resetăm starea de eroare/warning vizuală de pe nod
 
   try {
-    // 1. Obține tokenul de acces Spotify (apel automatizat în acestă versiune, CU Secret în Frontend)
+    // 1. Obține artiștii similari de la Last.fm
+    console.log(`Se caută artiști similari de la Last.fm pentru: "${artistName}"`);
+    const lastFmApiUrl = `https://api.spotify.com/v1/search/v1/search?q=eninem&type=artist&limit=1?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`; // Limită similară cu Spotify
+    const lastFmResponse = await fetch(lastFmApiUrl);
+
+    if (!lastFmResponse.ok) {
+       const errorBody = await lastFmResponse.json().catch(() => null);
+       const errorMessage = errorBody?.message || `HTTP error! status: ${lastFmResponse.status} during Last.fm fetch`;
+       console.error("Eroare la preluarea artiștilor similari de la Last.fm:", errorMessage, errorBody);
+       throw new Error(`Could not fetch similar artists from Last.fm: ${errorMessage}`);
+    }
+
+    const lastFmData = await lastFmResponse.json();
+    console.log("Date primite de la Last.fm (similar artists):", lastFmData);
+
+    if (lastFmData.error) {
+        console.error("Eroare returnată de API Last.fm în JSON:", lastFmData.message || lastFmData.error);
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            clickedNodeElementSelection.select("title").text(`${artistName} (Last.fm Error: ${lastFmData.message || lastFmData.error})`);
+            clickedNodeElementSelection.select(".outer-circle").style("stroke", "red");
+            clickedNode.errorState = 'error';
+        }
+        return; // Oprește execuția dacă Last.fm returnează eroare
+    }
+
+
+    // Verificăm dacă Last.fm a returnat artiști similari
+    if (!lastFmData.similarartists || !lastFmData.similarartists.artist || !Array.isArray(lastFmData.similarartists.artist)) {
+        console.log("Last.fm nu a returnat artiști similari în formatul așteptat pentru:", artistName, lastFmData);
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            clickedNodeElementSelection.select("title").text(`${artistName} (Last.fm Invalid response)`);
+            clickedNodeElementSelection.select(".outer-circle").style("stroke", "orange");
+            clickedNode.errorState = 'warning';
+        }
+        // Asigură-te că stilurile de încărcare sunt resetate
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            clickedNodeElementSelection.select("image").style("opacity", 1);
+            if (!clickedNode.errorState) {
+                clickedNodeElementSelection.select(".outer-circle").style("stroke", "#aaa");
+            }
+        }
+        return; // Oprește execuția
+    }
+
+    const similarArtistsNames = lastFmData.similarartists.artist
+      .filter(artist => artist.name && artist.name.toLowerCase() !== artistName.toLowerCase()) // Filtrează artistul însuși și asigură-te că numele există
+      .slice(0, 6) // Limitează la primii 6 artiști similari
+      .map(artist => artist.name); // Extrage doar numele
+
+
+    if (similarArtistsNames.length === 0) {
+        console.log("Nu s-au găsit artiști *similari* noi de la Last.fm.");
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            clickedNodeElementSelection.select("title").text(`${artistName} (No new similar artists found)`);
+        }
+        // Asigură-te că stilurile de încărcare sunt resetate
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            clickedNodeElementSelection.select("image").style("opacity", 1);
+            if (!clickedNode.errorState) {
+                clickedNodeElementSelection.select(".outer-circle").style("stroke", "#aaa");
+            }
+        }
+        return; // Nu continuăm dacă nu sunt artiști similari
+    }
+
+    // 2. Obține tokenul de acces Spotify (automatizat cu Secret în Frontend)
     const accessToken = await getSpotifyAccessToken();
     if (!accessToken) {
        // getSpotifyAccessToken ar trebui să fi aruncat deja o eroare și afișat un mesaj
        throw new Error("Nu s-a putut obține tokenul de acces Spotify.");
     }
 
-    // 2. Caută artistul pe Spotify pentru a obține ID-ul său
-    console.log(`Căutare ID Spotify pentru artistul: "${artistName}"`);
-    // CONSTRUIM URL-UL REAL PENTRU ENDPOINT-UL DE CĂUTARE
-const searchUrl = `${spotifyApiBaseUrl}/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
-    const searchResponse = await fetch(searchUrl, {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        }
-    });
+    const existingNodeIds = new Set(nodeData.map(n => n.id));
+    let elementsAddedCount = 0;
+    const cx = clickedNode.x ?? width / 2;
+    const cy = clickedNode.y ?? height / 2;
+    const radius = 150;
 
-    if (!searchResponse.ok) {
-       const errorBody = await searchResponse.json().catch(() => null);
-       const errorMessage = errorBody?.error?.message || `HTTP error! status: ${searchResponse.status} during artist search`;
-       console.error("Eroare la căutarea artistului pe Spotify:", errorMessage, errorBody);
-       throw new Error(`Could not search for artist on Spotify: ${errorMessage}`);
-    }
-
-    const searchData = await searchResponse.json();
-    console.log("Rezultate căutare Spotify:", searchData);
-
-    if (!searchData.artists || searchData.artists.items.length === 0) {
-        console.log(`Artistul "${artistName}" nu a fost găsit pe Spotify.`);
-        // Marchează nodul vizual ca warning dacă artistul nu e găsit
-        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-           clickedNodeElementSelection.select("title").text(`${artistName} (Not found on Spotify)`);
-           clickedNodeElementSelection.select(".outer-circle").style("stroke", "orange");
-           clickedNode.errorState = 'warning';
-        }
-        // Restabilește opacitatea imaginii chiar dacă nu a fost găsit artistul
-        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-           clickedNodeElementSelection.select("image").style("opacity", 1);
-        }
-        return; // Oprește execuția dacă artistul nu e găsit
-    }
-
-    const spotifyArtist = searchData.artists.items[0];
-    const spotifyArtistId = spotifyArtist.id;
-    // Caută o imagine de mărime rezonabilă (ex: >= 64px în înălțime) sau ia prima disponibilă
-    const spotifyArtistImageUrl = spotifyArtist.images && Array.isArray(spotifyArtist.images) && spotifyArtist.images.length > 0
-      ? (spotifyArtist.images.find(img => img.height >= 64) || spotifyArtist.images[0]).url
-      : null;
-
-    console.log(`ID Spotify găsit pentru "${artistName}": ${spotifyArtistId}`);
-    if (spotifyArtistImageUrl) console.log(`URL Imagine Spotify găsit pentru "${artistName}": ${spotifyArtistImageUrl}`);
-
-    // Actualizează nodul click-uit (nodul central) cu imageUrl de la Spotify dacă a fost găsit
-    // Aceasta asigură că nodul central primește imaginea artistului căutat
-    const nodeIndex = nodeData.findIndex(n => n.id === clickedNode.id);
-    if (nodeIndex !== -1 && !nodeData[nodeIndex].imageUrl && spotifyArtistImageUrl) {
-        nodeData[nodeIndex].imageUrl = spotifyArtistImageUrl;
-        console.log(`Nodul central [${clickedNode.id}] actualizat cu imaginea Spotify.`);
-        // Marcam nodul actual ca având nevoie de o actualizare vizuală imediată
-        // renderGraph va face actualizarea imaginii în următoarea execuție, dar putem forța o actualizare vizuală direct aici
-        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-            clickedNodeElementSelection.select("image").attr("href", spotifyArtistImageUrl);
-            console.log(`Imaginea nodului central [${clickedNode.id}] actualizată vizual.`);
-        }
-    }
-
-
-    // 3. Obține artiștii similari de la Spotify folosind ID-ul artistului
-    console.log(`Se caută artiști similari pentru ID-ul Spotify: ${spotifyArtistId}`);
-    // CONSTRUIM URL-UL REAL PENTRU ENDPOINT-UL DE ARTIȘTI SIMILARI
-const relatedArtistsUrl = `${spotifyApiBaseUrl}/artists/${spotifyArtistId}/related-artists`;
-    const relatedArtistsResponse = await fetch(relatedArtistsUrl, {
-        headers: {
-            'Authorization': `Bearer ${accessToken}`
-        }
-    });
-
-    if (!relatedArtistsResponse.ok) {
-       const errorBody = await relatedArtistsResponse.json().catch(() => null);
-       const errorMessage = errorBody?.error?.message || `HTTP error! status: ${relatedArtistsResponse.status} during related artists fetch`;
-       console.error("Eroare la preluarea artiștilor similari de la Spotify:", errorMessage, errorBody);
-       throw new Error(`Could not fetch related artists from Spotify: ${errorMessage}`);
-    }
-
-    const relatedArtistsData = await relatedArtistsResponse.json();
-    console.log("Date primite de la Spotify (artiști similari):", relatedArtistsData);
-
-    // Procesează datele primite de la Spotify și actualizează graful
-    if (relatedArtistsData.artists && Array.isArray(relatedArtistsData.artists)) {
-        // Artiștii similari sunt în array-ul 'artists' din răspunsul Spotify
-        const similarArtists = relatedArtistsData.artists;
-
-        if (similarArtists.length === 0) {
-            console.log("Nu s-au găsit artiști similari pe Spotify.");
-            if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-                clickedNodeElementSelection.select("title").text(`${artistName} (No similar artists found)`);
-            }
-            // Asigură-te că stilurile de încărcare sunt resetate
-            if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-                clickedNodeElementSelection.select("image").style("opacity", 1);
-                // Resetează stroke-ul doar dacă nu era deja pe eroare/warning
-                if (!clickedNode.errorState) {
-                    clickedNodeElementSelection.select(".outer-circle").style("stroke", "#aaa");
-                }
-            }
-            return; // Oprește execuția dacă nu sunt artiști similari
-        }
-
-        const existingNodeIds = new Set(nodeData.map(n => n.id));
-        let elementsAddedCount = 0; // Numărăm și noduri și legături noi
-        const cx = clickedNode.x ?? width / 2; // Folosește poziția actuală a nodului click-uit
-        const cy = clickedNode.y ?? height / 2;
-        const radius = 150; // Ajustează distanța față de nodul central
-
-        // Limităm numărul de artiști similari adăugați, similar cu limita de 5 de la Last.fm
-        const artistsToAdd = similarArtists.slice(0, 6); // Ia primii 6 (poți ajusta)
-
-        artistsToAdd.forEach((artist, index) => {
-          const newId = artist.name; // Folosim numele artistului similar ca ID pentru noul nod
-          // Caută o imagine potrivită (ex: >= 64px în înălțime) sau ia prima disponibilă
-          const imageUrl = artist.images && Array.isArray(artist.images) && artist.images.length > 0
-            ? (artist.images.find(img => img.height >= 64) || artist.images[0]).url
-            : null;
-
-          // Adaugă nodul nou doar dacă nu există deja în graf
-          if (!existingNodeIds.has(newId)) {
-            // Calculează o poziție inițială pe un cerc în jurul nodului părinte
-            const angle = (2 * Math.PI / artistsToAdd.length) * index;
-            const newNode = {
-                id: newId,
-                imageUrl: imageUrl,
-                // Poziție inițială cu o mică variație random pentru a evita suprapunerea perfectă
-                x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30,
-                y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30
-            };
-            nodeData.push(newNode); // Adaugă noul nod în array-ul de date
-            linkData.push({ source: clickedNode.id, target: newId }); // Adaugă legătura
-            elementsAddedCount++; // Incrementăm numărul de elemente noi adăugate
-            console.log("Adăugat nod nou:", newId);
-            existingNodeIds.add(newId); // Adaugă noul ID la setul de ID-uri existente
-          } else {
-            console.log("Nodul exista deja:", newId);
-            // Dacă nodul există, verificăm dacă legătura există deja și o adăugăm dacă nu
+    // Procesăm fiecare artist similar de la Last.fm
+    for (const similarArtistName of similarArtistsNames) {
+        // Verifică dacă nodul există deja
+        if (existingNodeIds.has(similarArtistName)) {
+            console.log(`Nodul "${similarArtistName}" exista deja.`);
+            // Verifică dacă legătura există și adaugă dacă nu
             const linkExists = linkData.some(l =>
-                // Verifică dacă legătura (sursă->țintă) există
                 (typeof l.source === 'object' ? l.source.id === clickedNode.id : l.source === clickedNode.id) &&
-                (typeof l.target === 'object' ? l.target.id === newId : l.target === newId)
-                // Verifică și în sens invers (țintă->sursă), pentru grafuri nedirecționate
-                || (typeof l.source === 'object' ? l.source.id === newId : l.source === newId) &&
+                (typeof l.target === 'object' ? l.target.id === similarArtistName : l.target === similarArtistName)
+                || (typeof l.source === 'object' ? l.source.id === similarArtistName : l.source === similarArtistName) &&
                  (typeof l.target === 'object' ? l.target.id === clickedNode.id : l.target === clickedNode.id)
             );
-
             if (!linkExists) {
-              linkData.push({ source: clickedNode.id, target: newId }); // Adaugă legătura nouă
-              console.log("Adăugat legătură nouă către nod existent:", newId);
-              elementsAddedCount++; // Incrementăm și pentru legăturile noi adăugate către noduri existente
+              linkData.push({ source: clickedNode.id, target: similarArtistName });
+              console.log(`Adăugat legătură nouă către nod existent: "${similarArtistName}"`);
+              elementsAddedCount++; // Numărăm legătura nouă
             }
-          }
-        });
-
-        // Eliberează nodul părinte de poziția fixă (dacă a fost setată de drag) pentru a permite simulării să-l miște
-        delete clickedNode.fx;
-        delete clickedNode.fy;
-        console.log("Nod părinte eliberat (fx/fy șterse).");
-
-        // Redesenează graful și repornește simularea dacă s-au adăugat noduri noi sau legături noi
-        if (elementsAddedCount > 0) {
-          console.log(`Redesenare grafic și repornire simulare cu ${elementsAddedCount} elemente noi adăugate...`);
-          renderGraph();
-          // Repornește simularea cu o forță mică pentru a permite noilor elemente să se așeze
-          if(simulation) simulation.alpha(0.3).restart(); // Folosim 0.3 pentru o mișcare mai vizibilă la adăugare
-        } else {
-          console.log("Nu au fost adăugate elemente noi (noduri sau legături noi) în graf.");
-          // Dacă nu s-a adăugat nimic nou, resetează stilurile de încărcare manual
-          if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-            clickedNodeElementSelection.select("image").style("opacity", 1);
-            // Resetează stroke-ul doar dacă nu este o stare de eroare/warning
-            if (!clickedNode.errorState) {
-                const outerCircle = clickedNodeElementSelection.select(".outer-circle");
-                 if (outerCircle.node()) {
-                    outerCircle.style("stroke", "#aaa"); // Resetează culoarea bordurii la normal
-                 }
-            }
-          }
+            continue; // Treci la următorul artist similar dacă nodul există deja
         }
 
+
+        // 3. Pentru artiștii noi, caută metadate (imagine) pe Spotify
+        console.log(`Căutare metadate Spotify pentru artistul: "${similarArtistName}"`);
+        // CONSTRUIM URL-UL REAL SPOTIFY PENTRU ENDPOINT-UL DE CĂUTARE
+        const spotifySearchUrl = `${spotifyApiBaseUrl}/v1/search?q=${encodeURIComponent(similarArtistName)}&type=artist&limit=1`;
+        let spotifyArtistImageUrl = null;
+
+        try {
+            const spotifySearchResponse = await fetch(spotifySearchUrl, {
+                headers: {
+                    'Authorization': `Bearer ${accessToken}`
+                }
+            });
+
+            if (spotifySearchResponse.ok) {
+                const spotifySearchData = await spotifySearchResponse.json();
+                if (spotifySearchData.artists && spotifySearchData.artists.items.length > 0) {
+                    // Găsește o imagine potrivită (ex: >= 64px) sau ia prima
+                    const artistData = spotifySearchData.artists.items[0];
+                    if (artistData.images && Array.isArray(artistData.images) && artistData.images.length > 0) {
+                        spotifyArtistImageUrl = (artistData.images.find(img => img.height >= 64) || artistData.images[0]).url;
+                        console.log(`Găsit imagine Spotify pentru "${similarArtistName}": ${spotifyArtistImageUrl}`);
+                    } else {
+                        console.warn(`Nu s-au găsit imagini Spotify pentru "${similarArtistName}".`);
+                    }
+                } else {
+                    console.log(`Artistul "${similarArtistName}" nu a fost găsit pe Spotify pentru metadate.`);
+                }
+            } else {
+                // Tratează erorile de la API Search Spotify (fără a opri întregul proces)
+                const errorBody = await spotifySearchResponse.json().catch(() => null);
+                const errorMessage = errorBody?.error?.message || `HTTP error! status: ${spotifySearchResponse.status} during Spotify search for metadata`;
+                console.error(`Eroare la căutarea Spotify pentru metadate artist "${similarArtistName}":`, errorMessage, errorBody);
+            }
+        } catch (spotifyError) {
+            console.error(`Excepție la căutarea Spotify pentru metadate artist "${similarArtistName}":`, spotifyError);
+        }
+
+        // Adaugă noul nod cu imaginea (sau null dacă nu a fost găsită)
+        const angle = (2 * Math.PI / similarArtistsNames.length) * elementsAddedCount; // Folosim elementsAddedCount pentru a distribui uniform nodurile noi
+        const newNode = {
+            id: similarArtistName,
+            imageUrl: spotifyArtistImageUrl, // Poate fi null dacă nu s-a găsit imaginea
+            x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30,
+            y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30
+        };
+        nodeData.push(newNode);
+        linkData.push({ source: clickedNode.id, target: similarArtistName });
+        elementsAddedCount++;
+        console.log(`Adăugat nod nou și legătură pentru "${similarArtistName}".`);
+        existingNodeIds.add(similarArtistName); // Adaugă noul ID la setul de ID-uri existente
+    }
+
+    // Eliberează nodul părinte de poziția fixă
+    delete clickedNode.fx;
+    delete clickedNode.fy;
+    console.log("Nod părinte eliberat (fx/fy șterse).");
+
+    // Redesenează graful și repornește simularea dacă s-au adăugat elemente noi
+    if (elementsAddedCount > 0) {
+        console.log(`Redesenare grafic și repornire simulare cu ${elementsAddedCount} elemente noi adăugate...`);
+        renderGraph();
+        if (simulation) simulation.alpha(0.3).restart();
     } else {
-        console.log("API-ul Spotify nu a returnat artiști similari în formatul așteptat pentru:", artistName, relatedArtistsData);
-        // Marchează nodul vizual ca warning dacă formatul răspunsului e invalid
+        console.log("Nu au fost adăugate elemente noi (noduri sau legături noi) în graf.");
+        // Dacă nu s-a adăugat nimic nou, resetează stilurile de încărcare manual
         if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
-            clickedNodeElementSelection.select("title").text(`${artistName} (Invalid Spotify response)`);
-            clickedNodeElementSelection.select(".outer-circle").style("stroke", "orange");
-            clickedNode.errorState = 'warning';
+            clickedNodeElementSelection.select("image").style("opacity", 1);
+            if (!clickedNode.errorState) {
+                clickedNodeElementSelection.select(".outer-circle").style("stroke", "#aaa");
+            }
         }
     }
 
+
   } catch (error) {
-    console.error('A apărut o eroare în lanțul de apeluri Spotify:', error);
+    console.error('A apărut o eroare majoră în procesul expandNode:', error);
     // Afișează vizual eroarea pe nodul click-uit
-     if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+    if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
         clickedNodeElementSelection.select("title").text(`${artistName} (Error: ${error.message})`);
         clickedNodeElementSelection.select(".outer-circle").style("stroke", "red");
         clickedNode.errorState = 'error'; // Setează starea de eroare
-       // Restabilește opacitatea imaginii în caz de eroare
+        // Restabilește opacitatea imaginii în caz de eroare
         clickedNodeElementSelection.select("image").style("opacity", 1);
-     }
+    }
   } finally {
-        console.log("Apelurile API Spotify finalizate pentru:", artistName);
+        console.log("Procesul expandNode finalizat pentru:", artistName);
         // Resetăm stilurile de încărcare (opacitatea imaginii, culoarea bordurii cercului)
-        // Această logică s-a mutat în blocurile try/catch/then/else pentru a fi mai precisă,
+        // Acestea sunt gestionate în blocurile try/catch/then/else pentru a fi mai precise,
         // dar ne asigurăm aici că opacitatea imaginii revine la 1 indiferent de rezultat.
         if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
             const imageElement = clickedNodeElementSelection.select("image");
@@ -565,7 +545,7 @@ const relatedArtistsUrl = `${spotifyApiBaseUrl}/artists/${spotifyArtistId}/relat
         }
     }
 }
-// --- SFÂRȘIT FUNCȚIE expandNode MODIFICATĂ PENTRU SPOTIFY ---
+// --- SFÂRȘIT FUNCȚIE expandNode MODIFICATĂ PENTRU HYBRID LAST.FM + SPOTIFY ---
 
 
 // Funcția pentru drag & drop (rămâne neschimbată)
@@ -600,4 +580,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Spotify API - URL-uri CORECTATE FINAL + Automatizat cu Secret în Frontend) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Hybrid Last.fm + Spotify - CU Secret în Frontend) ------------
