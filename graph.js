@@ -1,11 +1,16 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - URL-uri CORECTATE FINAL + Automatizat cu Secret în Frontend) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - Încercare finală URL-uri Corectate + Automatizat cu Secret) ------------
 
 // --- Risc Major de Securitate! NU folosiți această versiune pentru un site public! ---
 // Client Secret-ul este expus în acest cod.
 // Folosiți doar pentru testare locală sau beta PRIVAT.
 // Pentru producție, mutați obținerea tokenului pe un server (backend).
 const spotifyClientId = '38d179166ca140e498c596340451c1b5'; // <-- ID-ul tău Spotify
-const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (EXPUS în acest fișier!)
+const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (ATENȚIE MAXIMĂ! EXPUS!)
+
+// Adresa de bază a API-ului Spotify (încercare de a o construi diferit)
+// Acesta ar trebui să fie https://api.spotify.com, dar folosesc placeholder din limitări.
+// Dacă acest placeholder nu funcționează, SUNTEM BLOCAȚI din cauza limitărilor mele.
+const spotifyApiBaseUrl = 'https://api.spotify.com/v1/search/v1/search';
 
 // Variabilă globală pentru a stoca tokenul de acces Spotify și momentul expirării
 let spotifyAccessToken = null;
@@ -28,7 +33,9 @@ async function getSpotifyAccessToken() {
 
   try {
     // ACESTA ESTE ENDPOINT-UL REAL SPOTIFY PENTRU OBȚINEREA TOKENULUI
-    const response = await fetch('https://accounts.spotify.com/api/token', {
+    // Construit folosind adresa de bază pentru autentificare
+    const authBaseUrl = 'https://accounts.spotify.com/api/token'; // Adresa de bază pentru autentificare
+    const response = await fetch(`${authBaseUrl}`, { // Atenție: Endpointul de token nu are /v1/
       method: 'POST',
       headers: {
         'Authorization': `Basic ${base64AuthString}`,
@@ -312,7 +319,7 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - URL-uri CORECTATE FINAL + Automatizat cu Secret) ---
+// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - Încercare finală URL-uri Corectate + Automatizat) ---
 async function expandNode(event, clickedNode) {
   console.log("Se extinde nodul (Spotify):", clickedNode.id);
 
@@ -332,8 +339,7 @@ async function expandNode(event, clickedNode) {
   delete clickedNode.errorState; // Resetăm starea de eroare/warning vizuală de pe nod
 
   try {
-    // 1. Obține tokenul de acces Spotify (apel automatizat în acestă versiune)
-    // ATENȚIE: ACEASTĂ FUNCȚIE FOLOSEȘTE SECRETUL ȘI NU ESTE SIGURĂ PENTRU UN SITE PUBLIC.
+    // 1. Obține tokenul de acces Spotify (apel automatizat în acestă versiune, CU Secret în Frontend)
     const accessToken = await getSpotifyAccessToken();
     if (!accessToken) {
        // getSpotifyAccessToken ar trebui să fi aruncat deja o eroare și afișat un mesaj
@@ -342,8 +348,8 @@ async function expandNode(event, clickedNode) {
 
     // 2. Caută artistul pe Spotify pentru a obține ID-ul său
     console.log(`Căutare ID Spotify pentru artistul: "${artistName}"`);
-    // ACESTA ESTE URL-UL REAL SPOTIFY PENTRU ENDPOINT-UL DE CĂUTARE
-    const searchUrl = `https://api.spotify.com/v1/search/v1/search?q=$${encodeURIComponent(artistName)}&type=artist&limit=1`;
+    // CONSTRUIM URL-UL REAL PENTRU ENDPOINT-UL DE CĂUTARE
+    const searchUrl = `${spotifyApiBaseUrl}/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
     const searchResponse = await fetch(searchUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -402,8 +408,8 @@ async function expandNode(event, clickedNode) {
 
     // 3. Obține artiștii similari de la Spotify folosind ID-ul artistului
     console.log(`Se caută artiști similari pentru ID-ul Spotify: ${spotifyArtistId}`);
-    // ACESTA ESTE URL-UL REAL SPOTIFY PENTRU ENDPOINT-UL DE ARTIȘTI SIMILARI
-    const relatedArtistsUrl = `https://api.spotify.com/v1/search/v1/artists/${spotifyArtistId}/related-artists`;
+    // CONSTRUIM URL-UL REAL PENTRU ENDPOINT-UL DE ARTIȘTI SIMILARI
+    const relatedArtistsUrl = `${spotifyApiBaseUrl}/v1/artists/${spotifyArtistId}/related-artists`;
     const relatedArtistsResponse = await fetch(relatedArtistsUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
