@@ -349,7 +349,7 @@ async function expandNode(event, clickedNode) {
     // 2. Caută artistul pe Spotify pentru a obține ID-ul său
     console.log(`Căutare ID Spotify pentru artistul: "${artistName}"`);
     // CONSTRUIM URL-UL REAL PENTRU ENDPOINT-UL DE CĂUTARE
-    const searchUrl = `${spotifyApiBaseUrl}/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
+const searchUrl = `${spotifyApiBaseUrl}/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
     const searchResponse = await fetch(searchUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
