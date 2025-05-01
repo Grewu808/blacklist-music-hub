@@ -409,7 +409,7 @@ const searchUrl = `${spotifyApiBaseUrl}/search?q=${encodeURIComponent(artistName
     // 3. Obține artiștii similari de la Spotify folosind ID-ul artistului
     console.log(`Se caută artiști similari pentru ID-ul Spotify: ${spotifyArtistId}`);
     // CONSTRUIM URL-UL REAL PENTRU ENDPOINT-UL DE ARTIȘTI SIMILARI
-    const relatedArtistsUrl = `${spotifyApiBaseUrl}/v1/artists/${spotifyArtistId}/related-artists`;
+const relatedArtistsUrl = `${spotifyApiBaseUrl}/artists/${spotifyArtistId}/related-artists`;
     const relatedArtistsResponse = await fetch(relatedArtistsUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
