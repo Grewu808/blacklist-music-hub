@@ -10,7 +10,7 @@ const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul
 // Adresa de bază a API-ului Spotify (încercare de a o construi diferit)
 // Acesta ar trebui să fie https://api.spotify.com, dar folosesc placeholder din limitări.
 // Dacă acest placeholder nu funcționează, SUNTEM BLOCAȚI din cauza limitărilor mele.
-const spotifyApiBaseUrl = 'https://api.spotify.com/v1/search/v1/search';
+const spotifyApiBaseUrl = 'https://api.spotify.com/v1';
 
 // Variabilă globală pentru a stoca tokenul de acces Spotify și momentul expirării
 let spotifyAccessToken = null;
