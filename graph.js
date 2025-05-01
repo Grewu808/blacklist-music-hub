@@ -1,4 +1,4 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - URL-uri REALE) ------------
 
 // --- ATENȚIE MARE LA SECURITATE! ---
 // PUNEREA SECRETULUI SPOTIFY DIRECT ÎN CODUL DIN BROWSER NU ESTE SIGURĂ ÎN PRODUCȚIE!
@@ -56,7 +56,7 @@ async function getSpotifyAccessToken() {
   } catch (error) {
     console.error("Eroare critică în funcția getSpotifyAccessToken:", error);
     // Afișează un mesaj clar utilizatorului dacă nu se poate autentifica la Spotify
-    alert("Eroare la conectarea cu Spotify. Verifică consola pentru detalii.");
+    alert("Eroare la conectarea cu Spotify. Verifică consola pentru detalii (posibil ID/Secret incorect).");
     throw error; // Propagă eroarea mai departe
   }
 }
@@ -311,7 +311,7 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY) ---
+// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - URL-uri REALE) ---
 async function expandNode(event, clickedNode) {
   console.log("Se extinde nodul (Spotify):", clickedNode.id);
 
@@ -332,6 +332,7 @@ async function expandNode(event, clickedNode) {
 
   try {
     // 1. Obține tokenul de acces Spotify
+    // ATENȚIE: getSpotifyAccessToken conține Secret-ul Clientului și NU este sigură pentru frontend public.
     const accessToken = await getSpotifyAccessToken();
     if (!accessToken) {
        // getSpotifyAccessToken ar trebui să fi aruncat deja o eroare și afișat un mesaj
@@ -340,7 +341,7 @@ async function expandNode(event, clickedNode) {
 
     // 2. Caută artistul pe Spotify pentru a obține ID-ul său
     console.log(`Căutare ID Spotify pentru artistul: "${artistName}"`);
-    // ATENȚIE: Aceasta este URL-ul REAL al endpoint-ului Spotify pentru căutare
+    // ATENȚIE: Acesta este URL-ul REAL al endpoint-ului Spotify pentru căutare
     const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
     const searchResponse = await fetch(searchUrl, {
         headers: {
@@ -375,21 +376,26 @@ async function expandNode(event, clickedNode) {
 
     const spotifyArtist = searchData.artists.items[0];
     const spotifyArtistId = spotifyArtist.id;
+    // Caută o imagine de mărime rezonabilă (ex: >= 64px în înălțime) sau ia prima disponibilă
     const spotifyArtistImageUrl = spotifyArtist.images && Array.isArray(spotifyArtist.images) && spotifyArtist.images.length > 0
-      ? (spotifyArtist.images.find(img => img.height >= 64) || spotifyArtist.images[0]).url // Ia o imagine >= 64px sau prima
+      ? (spotifyArtist.images.find(img => img.height >= 64) || spotifyArtist.images[0]).url
       : null;
 
     console.log(`ID Spotify găsit pentru "${artistName}": ${spotifyArtistId}`);
     if (spotifyArtistImageUrl) console.log(`URL Imagine Spotify găsit pentru "${artistName}": ${spotifyArtistImageUrl}`);
 
-    // Actualizează nodul click-uit cu imageUrl de la Spotify dacă a fost găsit
-    // Fără această actualizare, nodul central nu va avea imagine
+    // Actualizează nodul click-uit (nodul central) cu imageUrl de la Spotify dacă a fost găsit
+    // Aceasta asigură că nodul central primește imaginea artistului căutat
     const nodeIndex = nodeData.findIndex(n => n.id === clickedNode.id);
     if (nodeIndex !== -1 && !nodeData[nodeIndex].imageUrl && spotifyArtistImageUrl) {
         nodeData[nodeIndex].imageUrl = spotifyArtistImageUrl;
         console.log(`Nodul central [${clickedNode.id}] actualizat cu imaginea Spotify.`);
         // Marcam nodul actual ca având nevoie de o actualizare vizuală imediată
-        // renderGraph va face actualizarea imaginii
+        // renderGraph va face actualizarea imaginii în următoarea execuție, dar putem forța o actualizare vizuală direct aici
+        if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
+            clickedNodeElementSelection.select("image").attr("href", spotifyArtistImageUrl);
+            console.log(`Imaginea nodului central [${clickedNode.id}] actualizată vizual.`);
+        }
     }
 
 
@@ -435,7 +441,7 @@ async function expandNode(event, clickedNode) {
         }
 
         const existingNodeIds = new Set(nodeData.map(n => n.id));
-        let nodesAddedCount = 0;
+        let elementsAddedCount = 0; // Numărăm și noduri și legături noi
         const cx = clickedNode.x ?? width / 2; // Folosește poziția actuală a nodului click-uit
         const cy = clickedNode.y ?? height / 2;
         const radius = 150; // Ajustează distanța față de nodul central
@@ -445,7 +451,7 @@ async function expandNode(event, clickedNode) {
 
         artistsToAdd.forEach((artist, index) => {
           const newId = artist.name; // Folosim numele artistului similar ca ID pentru noul nod
-          // Caută o imagine potrivită (ex: >= 64px) sau ia prima imagine disponibilă
+          // Caută o imagine potrivită (ex: >= 64px) sau ia prima disponibilă
           const imageUrl = artist.images && Array.isArray(artist.images) && artist.images.length > 0
             ? (artist.images.find(img => img.height >= 64) || artist.images[0]).url
             : null;
@@ -463,7 +469,7 @@ async function expandNode(event, clickedNode) {
             };
             nodeData.push(newNode); // Adaugă noul nod în array-ul de date
             linkData.push({ source: clickedNode.id, target: newId }); // Adaugă legătura
-            nodesAddedCount++; // Incrementăm numărul de noduri noi adăugate
+            elementsAddedCount++; // Incrementăm numărul de elemente noi adăugate
             console.log("Adăugat nod nou:", newId);
             existingNodeIds.add(newId); // Adaugă noul ID la setul de ID-uri existente
           } else {
@@ -481,7 +487,7 @@ async function expandNode(event, clickedNode) {
             if (!linkExists) {
               linkData.push({ source: clickedNode.id, target: newId }); // Adaugă legătura nouă
               console.log("Adăugat legătură nouă către nod existent:", newId);
-              // Nu incrementăm nodesAddedCount, doar linkAddedCount dacă vrei să ții evidența legăturilor noi
+              elementsAddedCount++; // Incrementăm și pentru legăturile noi adăugate către noduri existente
             }
           }
         });
@@ -491,18 +497,12 @@ async function expandNode(event, clickedNode) {
         delete clickedNode.fy;
         console.log("Nod părinte eliberat (fx/fy șterse).");
 
-
         // Redesenează graful și repornește simularea dacă s-au adăugat noduri noi sau legături noi
-        // Verificăm dacă s-a modificat setul de legături pentru a include și legăturile noi către noduri existente
-        const linksChanged = linkData.length !== container.selectAll("line.link").size();
-        const nodesChanged = nodesAddedCount > 0;
-
-
-        if (nodesChanged || linksChanged) {
-          console.log(`Redesenare grafic și repornire simulare (Noduri noi: ${nodesAddedCount}, Legături schimbate: ${linksChanged})...`);
+        if (elementsAddedCount > 0) {
+          console.log(`Redesenare grafic și repornire simulare cu ${elementsAddedCount} elemente noi adăugate...`);
           renderGraph();
           // Repornește simularea cu o forță mică pentru a permite noilor elemente să se așeze
-          if(simulation) simulation.alpha(0.3).restart(); // S-a modificat de la 0.1 la 0.3 pentru o mișcare mai vizibilă
+          if(simulation) simulation.alpha(0.3).restart(); // Folosim 0.3 pentru o mișcare mai vizibilă la adăugare
         } else {
           console.log("Nu au fost adăugate elemente noi (noduri sau legături noi) în graf.");
           // Dacă nu s-a adăugat nimic nou, resetează stilurile de încărcare manual
@@ -538,7 +538,7 @@ async function expandNode(event, clickedNode) {
   } finally {
         console.log("Apelurile API Spotify finalizate pentru:", artistName);
         // Resetăm stilurile de încărcare (opacitatea imaginii, culoarea bordurii cercului)
-        // Această logică s-a mutat în blocurile try/catch/then pentru a fi mai precisă,
+        // Această logică s-a mutat în blocurile try/catch/then/else pentru a fi mai precisă,
         // dar ne asigurăm aici că opacitatea imaginii revine la 1 indiferent de rezultat.
         if (clickedNodeElementSelection && !clickedNodeElementSelection.empty()) {
             const imageElement = clickedNodeElementSelection.select("image");
@@ -590,4 +590,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Spotify API) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Spotify API - URL-uri REALE) ------------
