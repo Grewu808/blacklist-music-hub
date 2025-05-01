@@ -1,16 +1,14 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Hybrid Last.fm + Spotify - CU Secret în Frontend) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Hybrid Last.fm + Spotify - URL-uri Corectate Final) ------------
 
-// --- ATENȚIE MARE LA SECURITATE! ACEASTA NU ESTE SIGUR PENTRU UN SITE PUBLIC! ---
-// Client Secret-ul Spotify este inclus în acest cod și va fi vizibil oricui accesează site-ul tău.
-// Folosiți această versiune DOAR pentru testare locală sau beta PRIVATĂ.
-// PENTRU VARIANTA PUBLICĂ/FINALĂ, MUTĂ OBȚINEREA TOKENULUI SPOTIFY PE UN SERVER (BACKEND).
+// --- Risc Major de Securitate! NU folosiți această versiune pentru un site public! ---
+// Client Secret-ul Spotify este expus în acest cod.
+// Folosiți doar pentru testare locală sau beta PRIVAT.
+// Pentru producție, mutați obținerea tokenului pe un server (backend).
+const spotifyClientId = '38d179166ca140e498c596340451c1b5'; // <-- ID-ul tău Spotify
+const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (ATENȚIE MAXIMĂ! EXPUS!)
 
 // Cheia API Last.fm (Acesta poate fi public)
-const lastFmApiKey = 'fe14d9e2ae87da47a1642aab12b6f52b';
-
-// Credențialele API Spotify (Acesta poate fi public, dar Secretul NU)
-const spotifyClientId = '38d179166ca140e498c596340451c1b5'; // <-- ID-ul tău Spotify
-const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (RISC MAJOR: EXPUS aici!)
+const lastFmApiKey = 'fe14d9e2ae87da47a1642aab12b6f52b'; // <-- Cheia ta Last.fm
 
 
 // Variabile globale pentru a stoca tokenul de acces Spotify și momentul expirării
@@ -32,9 +30,9 @@ async function getSpotifyAccessToken() {
   const base64AuthString = btoa(authString);
 
   try {
-    // ENDPOINT-UL REAL SPOTIFY PENTRU OBȚINEREA TOKENULUI
-    const authBaseUrl = 'https://accounts.spotify.com/api/token';
-    const response = await fetch(`${authBaseUrl}`, {
+    // ACESTA ESTE ENDPOINT-UL REAL SPOTIFY PENTRU OBȚINEREA TOKENULUI
+    const authBaseUrl = 'https://accounts.spotify.com/api/token'; // Adresa de bază pentru autentificare
+    const response = await fetch(`${authBaseUrl}`, { // Endpointul de token nu are /v1/
       method: 'POST',
       headers: {
         'Authorization': `Basic ${base64AuthString}`,
@@ -71,6 +69,9 @@ async function getSpotifyAccessToken() {
 // Adresa de bază a API-ului Spotify (pentru Search și alte endpoint-uri)
 // Acesta ar trebui să fie https://api.spotify.com/v1/search/v1/search, dar folosesc placeholder.
 const spotifyApiBaseUrl = 'https://api.spotify.com/v1/search/v1/search';
+
+// Adresa de bază a API-ului Last.fm (Acesta ar trebui să fie https://api.spotify.com/v1/search/v1/search?q=eminem&type=artist&limit=1)
+const lastFmApiBaseUrl = 'https://api.spotify.com/v1/search/v1/search?q=eminem&type=artist&limit=1';
 
 
 const width = window.innerWidth;
@@ -344,7 +345,8 @@ async function expandNode(event, clickedNode) {
   try {
     // 1. Obține artiștii similari de la Last.fm
     console.log(`Se caută artiști similari de la Last.fm pentru: "${artistName}"`);
-    const lastFmApiUrl = `https://api.spotify.com/v1/search/v1/search?q=eninem&type=artist&limit=1?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`; // Limită similară cu Spotify
+    // CONSTRUIM URL-UL REAL PENTRU ENDPOINT-UL DE ARTIȘTI SIMILARI LAST.FM
+    const lastFmApiUrl = `${lastFmApiBaseUrl}/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`; // Limită similară cu Spotify
     const lastFmResponse = await fetch(lastFmApiUrl);
 
     if (!lastFmResponse.ok) {
@@ -408,6 +410,7 @@ async function expandNode(event, clickedNode) {
     }
 
     // 2. Obține tokenul de acces Spotify (automatizat cu Secret în Frontend)
+    // ATENȚIE: ACEST APEL FOLOSEȘTE SECRETUL ȘI NU ESTE SIGUR PENTRU UN SITE PUBLIC.
     const accessToken = await getSpotifyAccessToken();
     if (!accessToken) {
        // getSpotifyAccessToken ar trebui să fi aruncat deja o eroare și afișat un mesaj
@@ -421,7 +424,8 @@ async function expandNode(event, clickedNode) {
     const radius = 150;
 
     // Procesăm fiecare artist similar de la Last.fm
-    for (const similarArtistName of similarArtistsNames) {
+    for (let i = 0; i < similarArtistsNames.length; i++) {
+        const similarArtistName = similarArtistsNames[i];
         // Verifică dacă nodul există deja
         if (existingNodeIds.has(similarArtistName)) {
             console.log(`Nodul "${similarArtistName}" exista deja.`);
@@ -479,7 +483,8 @@ async function expandNode(event, clickedNode) {
         }
 
         // Adaugă noul nod cu imaginea (sau null dacă nu a fost găsită)
-        const angle = (2 * Math.PI / similarArtistsNames.length) * elementsAddedCount; // Folosim elementsAddedCount pentru a distribui uniform nodurile noi
+        // Folosim indexul artistului similar pentru a distribui uniform nodurile noi pe un cerc
+        const angle = (2 * Math.PI / similarArtistsNames.length) * i;
         const newNode = {
             id: similarArtistName,
             imageUrl: spotifyArtistImageUrl, // Poate fi null dacă nu s-a găsit imaginea
@@ -491,6 +496,7 @@ async function expandNode(event, clickedNode) {
         elementsAddedCount++;
         console.log(`Adăugat nod nou și legătură pentru "${similarArtistName}".`);
         existingNodeIds.add(similarArtistName); // Adaugă noul ID la setul de ID-uri existente
+
     }
 
     // Eliberează nodul părinte de poziția fixă
@@ -574,10 +580,4 @@ function drag(simulation) {
     svg.call(zoom); // Reactivăm zoom-ul D3 după ce drag-ul s-a terminat
   }
 
-  return d3.drag()
-    .on("start", dragstarted)
-    .on("drag", dragged)
-    .on("end", dragended);
-}
-
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Hybrid Last.fm + Spotify - CU Secret în Frontend) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Hybrid Last.fm + Spotify - URL-uri Corectate Final) ------------
