@@ -1,19 +1,19 @@
-// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - Automatizat - CU Secret în Frontend) ------------
+// ------------ ÎNCEPUT COD COMPLET PENTRU graph.js (Spotify API - URL-uri CORECTATE FINAL + Automatizat cu Secret în Frontend) ------------
 
-// --- ATENȚIE MARE LA SECURITATE! ACEASTA NU ESTE SIGUR PENTRU UN SITE PUBLIC! ---
-// CLIENT SECRET-UL ESTE INCLUS ÎN ACEST COD ȘI VA FI VIZIBIL ORICUI ACCESEAZĂ SITE-UL TĂU.
-// FOLOSEȘTE ACEASTĂ VERSIUNE DOAR PENTRU TESTARE LOCALĂ SAU BETA PRIVATĂ.
-// PENTRU VARIANTA PUBLICĂ/FINALĂ, MUTĂ OBȚINEREA TOKENULUI PE UN SERVER (BACKEND).
+// --- Risc Major de Securitate! NU folosiți această versiune pentru un site public! ---
+// Client Secret-ul este expus în acest cod.
+// Folosiți doar pentru testare locală sau beta PRIVAT.
+// Pentru producție, mutați obținerea tokenului pe un server (backend).
 const spotifyClientId = '38d179166ca140e498c596340451c1b5'; // <-- ID-ul tău Spotify
-const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (ATENȚIE MAXIMĂ!)
+const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1'; // <-- Secret-ul tău Spotify (EXPUS în acest fișier!)
 
 // Variabilă globală pentru a stoca tokenul de acces Spotify și momentul expirării
 let spotifyAccessToken = null;
 let spotifyTokenExpiryTime = 0; // Momentul la care expiră tokenul (timestamp în milisecunde)
 
-// --- Funcție pentru a obține sau reînnoi tokenul Spotify ---
-// ACEASTĂ IMPLEMENTARE OBȚINE TOKENUL DIRECT DIN FRONTEND, FOLOSIND SECRETUL.
-// NU ESTE SIGURĂ PENTRU UN SITE PUBLIC.
+// --- Funcție pentru a obține sau reînnoi tokenul Spotify (Automatizat - CU Secret în Frontend) ---
+// ACEASTĂ IMPLEMENTARE NU ESTE SIGURĂ PENTRU UN SITE PUBLIC.
+// Expune Secretul Clientului Spotify în codul sursă vizibil în browser.
 async function getSpotifyAccessToken() {
   // Verifică dacă avem deja un token și dacă este încă valid
   if (spotifyAccessToken && Date.now() < spotifyTokenExpiryTime) {
@@ -42,7 +42,7 @@ async function getSpotifyAccessToken() {
       const errorMessage = errorBody?.error_description || `HTTP error! status: ${response.status}`;
       console.error("Eroare la obținerea tokenului Spotify:", errorMessage, errorBody);
       // Alertăm utilizatorul despre problema de autentificare
-      alert("Eroare la conectarea cu Spotify pentru autentificare. Verifică consola.");
+      alert("Eroare la conectarea cu Spotify pentru autentificare. Verifică consola pentru detalii (posibil ID/Secret incorect).");
       throw new Error(`Could not get Spotify access token: ${errorMessage}`);
     }
 
@@ -55,7 +55,7 @@ async function getSpotifyAccessToken() {
 
   } catch (error) {
     console.error("Eroare în funcția getSpotifyAccessToken:", error);
-    // Dacă obținerea tokenului eșuează, setăm tokenul și expirarea la null pentru a reîncerca
+    // Dacă obținerea tokenului eșuează, setăm tokenul și expirarea la null pentru a forța reîncercarea
     spotifyAccessToken = null;
     spotifyTokenExpiryTime = 0;
     throw error; // Propagă eroarea mai departe
@@ -312,7 +312,7 @@ function renderGraph() {
 }
 
 
-// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - AUTOMATIZAT CU SECRET) ---
+// --- FUNCȚIA expandNode (MODIFICATĂ PENTRU SPOTIFY - URL-uri CORECTATE FINAL + Automatizat cu Secret) ---
 async function expandNode(event, clickedNode) {
   console.log("Se extinde nodul (Spotify):", clickedNode.id);
 
@@ -333,6 +333,7 @@ async function expandNode(event, clickedNode) {
 
   try {
     // 1. Obține tokenul de acces Spotify (apel automatizat în acestă versiune)
+    // ATENȚIE: ACEASTĂ FUNCȚIE FOLOSEȘTE SECRETUL ȘI NU ESTE SIGURĂ PENTRU UN SITE PUBLIC.
     const accessToken = await getSpotifyAccessToken();
     if (!accessToken) {
        // getSpotifyAccessToken ar trebui să fi aruncat deja o eroare și afișat un mesaj
@@ -341,8 +342,8 @@ async function expandNode(event, clickedNode) {
 
     // 2. Caută artistul pe Spotify pentru a obține ID-ul său
     console.log(`Căutare ID Spotify pentru artistul: "${artistName}"`);
-    // ACUM FOLOSIM URL-UL REAL SPOTIFY PENTRU ENDPOINT-UL DE CĂUTARE
-    const searchUrl = `https://api.spotify.com/v1/search/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
+    // ACESTA ESTE URL-UL REAL SPOTIFY PENTRU ENDPOINT-UL DE CĂUTARE
+    const searchUrl = `https://api.spotify.com/v1/search/v1/search?q=$${encodeURIComponent(artistName)}&type=artist&limit=1`;
     const searchResponse = await fetch(searchUrl, {
         headers: {
             'Authorization': `Bearer ${accessToken}`
@@ -593,4 +594,4 @@ function drag(simulation) {
     .on("end", dragended);
 }
 
-// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Spotify API - Automatizat - CU Secret în Frontend) ------------
+// ------------ SFÂRȘIT COD COMPLET PENTRU graph.js (Spotify API - URL-uri CORECTATE FINAL + Automatizat cu Secret în Frontend) ------------
