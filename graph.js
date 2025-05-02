@@ -1,4 +1,4 @@
-// ------------ graph.js (Hybrid Last.fm + Spotify) - Versiune Completă și Funcțională ------------
+// ------------ graph.js (Hybrid Last.fm + Spotify) - Full Upgrade v1 ------------
 
 // ATENȚIE: NU folosi acest cod pe un site public! Secretul Spotify e expus aici!
 const spotifyClientId = '38d179166ca140e498c596340451c1b5';
@@ -39,6 +39,7 @@ const height = window.innerHeight;
 const svg = d3.select("#viz").attr("width", width).attr("height", height);
 const container = svg.append("g").attr("class", "zoom-container");
 
+// ClipPath mărit la r = 28 pentru poze mai mari
 svg.append("defs").append("clipPath")
   .attr("id", "clip-circle")
   .append("circle")
@@ -129,34 +130,56 @@ function renderGraph() {
     .join(
       enter => {
         const g = enter.append("g").attr("class", "node");
+
         g.on("click", (e, d) => {
           e.stopPropagation();
           expandNode(e, d);
         });
+
         g.append("circle")
           .attr("class", "outer-circle")
           .attr("r", 28)
           .attr("fill", "transparent")
           .attr("stroke", "#aaa")
           .attr("stroke-width", 1);
+
         g.append("image")
           .attr("href", d => d.imageUrl || "")
           .attr("width", 56)
           .attr("height", 56)
           .attr("x", -28)
           .attr("y", -28)
-          .attr("clip-path", "url(#clip-circle)");
+          .attr("clip-path", "url(#clip-circle)")
+          .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
+
         g.append("title").text(d => d.id);
+
         g.append("text")
-          .attr("dy", "1.8em")
+          .attr("dy", "2.2em")
           .attr("text-anchor", "middle")
           .style("font-size", "10px")
           .style("fill", "#ccc")
           .text(d => d.id);
+
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
+
+        // Efect glow la hover
+        g.on("mouseenter", function () {
+          d3.select(this).select(".outer-circle")
+            .transition().duration(150)
+            .attr("stroke", "#ffffff")
+            .attr("stroke-width", 2);
+        }).on("mouseleave", function () {
+          d3.select(this).select(".outer-circle")
+            .transition().duration(150)
+            .attr("stroke", "#aaa")
+            .attr("stroke-width", 1);
+        });
+
         return g;
       },
+
       update => {
         update.select("title").text(d => d.id);
         update.select("text").text(d => d.id);
@@ -166,6 +189,7 @@ function renderGraph() {
             d.errorState === 'warning' ? 'orange' : '#aaa');
         return update;
       },
+
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
 
@@ -229,11 +253,7 @@ async function expandNode(event, clickedNode) {
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
       if (existingIds.has(name)) {
-        const exists = linkData.some(l =>
-          (l.source.id || l.source) === clickedNode.id &&
-          (l.target.id || l.target) === name
-        );
-        if (!exists) linkData.push({ source: clickedNode.id, target: name });
+        console.log(`"${name}" există deja. Ignorat.`);
         continue;
       }
 
