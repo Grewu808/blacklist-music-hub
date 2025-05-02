@@ -1,4 +1,3 @@
-
 // ------------ graph.js (Hybrid Last.fm + Spotify) - Full Upgrade FINAL ------------
 
 const spotifyClientId = '38d179166ca140e498c596340451c1b5';
@@ -171,22 +170,14 @@ function renderGraph() {
           .attr("clip-path", "url(#clip-circle)")
           .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
 
-        g.append("title").text(d => d.id);
-
         g.append("text")
+          .text(d => d.id)
           .attr("text-anchor", "middle")
+          .attr("dy", 42)
           .style("font-size", "12px")
           .style("font-weight", "bold")
-          .style("fill", "#ccc")
-          .selectAll("tspan")
-          .data(d => {
-            const words = d.id.split(' ');
-            return words.length > 1 ? [words.slice(0, -1).join(' '), words.at(-1)] : [d.id];
-          })
-          .join("tspan")
-          .attr("x", 0)
-          .attr("dy", (d, i) => `${1.8 + i * 1.1}em`)
-          .text(d => d);
+          .style("fill", "#ffffff")
+          .style("pointer-events", "none");
 
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
