@@ -42,7 +42,7 @@ const container = svg.append("g").attr("class", "zoom-container");
 svg.append("defs").append("clipPath")
   .attr("id", "clip-circle")
   .append("circle")
-  .attr("r", 16);
+  .attr("r", 28);
 
 let nodeData = [];
 let linkData = [];
