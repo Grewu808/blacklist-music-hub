@@ -141,10 +141,10 @@ function renderGraph() {
           .attr("stroke-width", 1);
         g.append("image")
           .attr("href", d => d.imageUrl || "")
-          .attr("width", 32)
-          .attr("height", 32)
-          .attr("x", -16)
-          .attr("y", -16)
+          .attr("width", 56)
+          .attr("height", 56)
+          .attr("x", -28)
+          .attr("y", -28)
           .attr("clip-path", "url(#clip-circle)");
         g.append("title").text(d => d.id);
         g.append("text")
