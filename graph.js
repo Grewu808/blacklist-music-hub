@@ -185,7 +185,7 @@ function renderGraph() {
           })
           .join("tspan")
           .attr("x", 0)
-          .attr("dy", (d, i) => `${3.6 + i * 1.2}em`)
+          .attr("dy", (d, i) => `${1.8 + i * 1.1}em`)
           .text(d => d);
 
         g.call(drag(simulation));
