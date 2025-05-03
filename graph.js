@@ -130,15 +130,38 @@ function ticked() {
   if (nodeGroup) nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
 }
 
+
+function computeLinkWeights() {
+  const countMap = {};
+  linkData.forEach(l => {
+    const sourceId = l.source.id || l.source;
+    const targetId = l.target.id || l.target;
+    const key = [sourceId, targetId].sort().join('|');
+    countMap[key] = (countMap[key] || 0) + 1;
+  });
+  return countMap;
+}
+
 function renderGraph() {
+  const linkWeights = computeLinkWeights();
   link = container.selectAll("line.link")
     .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
     .join(
       enter => enter.append("line")
         .attr("class", "link")
-        .attr("stroke", "#555")
-        .attr("stroke-width", 1)
-        .attr("stroke-opacity", 0.4),
+        
+    .attr("stroke", d => {
+      const key = [d.source.id || d.source, d.target.id || d.target].sort().join('|');
+      const count = linkWeights[key] || 1;
+      return count > 1 ? "#f39c12" : "#555";
+    })
+    .attr("stroke-width", d => {
+      const key = [d.source.id || d.source, d.target.id || d.target].sort().join('|');
+      const count = linkWeights[key] || 1;
+      return Math.min(1 + count, 5);
+    })
+    .attr("stroke-opacity", 0.6)
+,
       update => update,
       exit => exit.remove()
     );
@@ -222,6 +245,23 @@ async function expandNode(event, clickedNode) {
   }
 
   try {
+
+  // Ripple effect
+  const ripple = container.append("circle")
+    .attr("cx", clickedNode.x)
+    .attr("cy", clickedNode.y)
+    .attr("r", 0)
+    .attr("fill", "none")
+    .attr("stroke", "#00f")
+    .attr("stroke-width", 2)
+    .attr("stroke-opacity", 0.5)
+    .lower();
+
+  ripple.transition()
+    .duration(500)
+    .attr("r", 60)
+    .attr("stroke-opacity", 0)
+    .remove();
     const lastFmUrl = `${lastFmApiBaseUrl}/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`;
     const response = await fetch(lastFmUrl);
     if (!response.ok) throw new Error("Last.fm fetch failed");
