@@ -50,6 +50,23 @@ async function fetchArtistImage(artistName) {
 const spotifyApiBaseUrl = 'https://api.spotify.com/v1';
 const lastFmApiBaseUrl = 'https://ws.audioscrobbler.com/2.0';
 
+function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
+  selection.each(function(d) {
+    const g = d3.select(this);
+    const ripple = g.insert("circle", ":first-child")
+      .attr("r", 0)
+      .attr("fill", "none")
+      .attr("stroke", color)
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.8);
+    ripple.transition()
+      .duration(duration)
+      .attr("r", maxRadius)
+      .attr("opacity", 0)
+      .remove();
+  });
+}
+
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -131,6 +148,7 @@ function ticked() {
 }
 
 function renderGraph() {
+  console.log(\"renderGraph triggered\");
   link = container.selectAll("line.link")
     .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
     .join(
