@@ -149,6 +149,15 @@ function renderGraph() {
       enter => {
         const g = enter.append("g").attr("class", "node");
 
+        g.each(function(d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+
+        g.on("mouseover", function(event, d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+    
+
         g.on("click", (e, d) => {
           e.stopPropagation();
           expandNode(e, d);
