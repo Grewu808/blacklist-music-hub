@@ -74,7 +74,8 @@ let simulation = d3.forceSimulation(nodeData)
 const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", e => container.attr("transform", e.transform));
 svg.call(zoom);
 
-let link = container.selectAll("line.link");
+let // Move links behind images:
+  link = container.insert("line", "g.node");
 let nodeGroup = container.selectAll("g.node");
 
 const searchInput = document.getElementById('artist-search-input');
@@ -101,7 +102,8 @@ async function handleSearch() {
   linkData = [];
   simulation.stop();
   container.selectAll("*").remove();
-  link = container.selectAll("line.link");
+  // Move links behind images:
+  link = container.insert("line", "g.node");
   nodeGroup = container.selectAll("g.node");
 
   const imageUrl = await fetchArtistImage(artistName);
@@ -112,6 +114,22 @@ async function handleSearch() {
     y: height / 2 + (Math.random() - 0.5) * 5,
     imageUrl: imageUrl
   });
+      // Secondary ripple effect
+      container.append("circle")
+        .attr("cx", cx + radius * Math.cos(angle))
+        .attr("cy", cy + radius * Math.sin(angle))
+        .attr("r", 0)
+        .attr("fill", "none")
+        .attr("stroke", "#00f")
+        .attr("stroke-width", 1.5)
+        .attr("stroke-opacity", 0.4)
+        .lower()
+        .transition()
+        .duration(600)
+        .attr("r", 40)
+        .attr("stroke-opacity", 0)
+        .remove();
+
 
   svg.call(zoom.transform, d3.zoomIdentity);
   renderGraph();
@@ -144,7 +162,8 @@ function computeLinkWeights() {
 
 function renderGraph() {
   const linkWeights = computeLinkWeights();
-  link = container.selectAll("line.link")
+  // Move links behind images:
+  link = container.insert("line", "g.node")
     .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
     .join(
       enter => enter.append("line")
@@ -246,22 +265,24 @@ async function expandNode(event, clickedNode) {
 
   try {
 
-  // Ripple effect
-  const ripple = container.append("circle")
-    .attr("cx", clickedNode.x)
-    .attr("cy", clickedNode.y)
-    .attr("r", 0)
-    .attr("fill", "none")
-    .attr("stroke", "#00f")
-    .attr("stroke-width", 2)
-    .attr("stroke-opacity", 0.5)
-    .lower();
+  
+    // Ripple effect on clicked node (strong)
+    const ripple = container.append("circle")
+      .attr("cx", clickedNode.x)
+      .attr("cy", clickedNode.y)
+      .attr("r", 0)
+      .attr("fill", "none")
+      .attr("stroke", "#00f")
+      .attr("stroke-width", 3)
+      .attr("stroke-opacity", 0.6)
+      .lower();
 
-  ripple.transition()
-    .duration(500)
-    .attr("r", 60)
-    .attr("stroke-opacity", 0)
-    .remove();
+    ripple.transition()
+      .duration(600)
+      .attr("r", 70)
+      .attr("stroke-opacity", 0)
+      .remove();
+
     const lastFmUrl = `${lastFmApiBaseUrl}/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`;
     const response = await fetch(lastFmUrl);
     if (!response.ok) throw new Error("Last.fm fetch failed");
@@ -292,6 +313,22 @@ async function expandNode(event, clickedNode) {
         x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30,
         y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30
       });
+      // Secondary ripple effect
+      container.append("circle")
+        .attr("cx", cx + radius * Math.cos(angle))
+        .attr("cy", cy + radius * Math.sin(angle))
+        .attr("r", 0)
+        .attr("fill", "none")
+        .attr("stroke", "#00f")
+        .attr("stroke-width", 1.5)
+        .attr("stroke-opacity", 0.4)
+        .lower()
+        .transition()
+        .duration(600)
+        .attr("r", 40)
+        .attr("stroke-opacity", 0)
+        .remove();
+
       linkData.push({ source: clickedNode.id, target: name });
       existingIds.add(name);
     }
