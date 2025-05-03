@@ -170,6 +170,7 @@ function renderGraph() {
       exit => exit.remove()
     );
 
+  
   nodeGroup = container.selectAll("g.node")
     .data(nodeData, d => d.id)
     .join(
@@ -223,11 +224,11 @@ function renderGraph() {
 
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
-        
       },
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
+
 
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
@@ -244,6 +245,7 @@ function renderGraph() {
       exit => exit.remove()
     );
 
+  
   nodeGroup = container.selectAll("g.node")
     .data(nodeData, d => d.id)
     .join(
@@ -297,12 +299,11 @@ function renderGraph() {
 
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
-
-        
-      },,
+      },
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
+
 
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
