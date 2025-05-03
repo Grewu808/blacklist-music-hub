@@ -1,3 +1,20 @@
+function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
+  selection.each(function(d) {
+    const g = d3.select(this);
+    const ripple = g.insert("circle", ":first-child")
+      .attr("r", 0)
+      .attr("fill", "none")
+      .attr("stroke", color)
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.8);
+    ripple.transition()
+      .duration(duration)
+      .attr("r", maxRadius)
+      .attr("opacity", 0)
+      .remove();
+  });
+}
+
 // ------------ graph.js (Hybrid Last.fm + Spotify) - Full Upgrade FINAL ------------
 
 const spotifyClientId = '38d179166ca140e498c596340451c1b5';
@@ -287,3 +304,5 @@ async function expandNode(event, clickedNode) {
 }
 
 // ------------ FINAL ------------
+
+console.log('READY');
