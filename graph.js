@@ -233,7 +233,8 @@ function renderGraph() {
   simulation.force("link").links(linkData);
   if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
 }
--${d.target.id || d.target}`)
+  console.log("renderGraph DONE");
+}-${d.target.id || d.target}`)
     .join(
       enter => enter.append("line")
         .attr("class", "link")
