@@ -452,13 +452,9 @@ async function expandNode(event, clickedNode) {
     const cy = clickedNode.y ?? height / 2;
     const radius = 130;
 
-    // Fix center node temporar
-    clickedNode.fx = cx;
-    clickedNode.fy = cy;
-    setTimeout(() => {
-      delete clickedNode.fx;
-      delete clickedNode.fy;
-    }, 1500);
+    // LOCK clicked node IMMEDIATELY
+    clickedNode.fx = clickedNode.x;
+    clickedNode.fy = clickedNode.y;
 
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
@@ -466,18 +462,35 @@ async function expandNode(event, clickedNode) {
 
       const imageUrl = await fetchArtistImage(name);
       const angle = (2 * Math.PI / names.length) * i;
+      const x = cx + radius * Math.cos(angle);
+      const y = cy + radius * Math.sin(angle);
       nodeData.push({
         id: name,
         imageUrl,
-        x: cx + radius * Math.cos(angle),
-        y: cy + radius * Math.sin(angle)
+        x,
+        y,
+        fx: x,
+        fy: y
       });
       linkData.push({ source: clickedNode.id, target: name });
       existingIds.add(name);
     }
 
     renderGraph();
+
+    // Restart force after everything is positioned
     simulation.alpha(0.6).restart();
+
+    // Unlock all after 1.5 sec
+    setTimeout(() => {
+      delete clickedNode.fx;
+      delete clickedNode.fy;
+      nodeData.forEach(n => {
+        if (n.fx) delete n.fx;
+        if (n.fy) delete n.fy;
+      });
+    }, 1500);
+
   } catch (err) {
     console.error("Expand error:", err);
   } finally {
