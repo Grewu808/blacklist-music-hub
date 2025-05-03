@@ -4,28 +4,26 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Harta Blacklist</title>
-  <link rel="stylesheet" href="style.css"/> <script src="https://d3js.org/d3.v6.min.js"></script>
+  <link rel="stylesheet" href="style.css"/>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
-      /* Resetează marginea default a body-ului */
       body {
           margin: 0;
-          display: flex; /* Folosim Flexbox pentru layout */
-          flex-direction: column; /* Aranjăm elementele vertical */
-          height: 100vh; /* Înălțime totală a viewport-ului */
-          background-color: #111; /* Fundal închis (ca în poze) */
-          color: #ccc; /* Culoare text default deschisă */
-          font-family: sans-serif; /* Un font simplu */
-          overflow: hidden; /* Prevenim scroll-ul pe body */
+          display: flex;
+          flex-direction: column;
+          height: 100vh;
+          background-color: #111;
+          color: #ccc;
+          font-family: sans-serif;
+          overflow: hidden;
       }
-      /* Containerul pentru căutare */
       .search-container {
-          flex-shrink: 0; /* Nu lăsăm containerul de căutare să se micșoreze */
+          flex-shrink: 0;
           padding: 15px;
           text-align: center;
-          background-color: #222; /* Un fundal puțin diferit pentru search box */
-          border-bottom: 1px solid #444; /* Linie de separare */
+          background-color: #222;
+          border-bottom: 1px solid #444;
       }
-      /* Input și buton - stilizare minimă */
       #artist-search-input, #artist-search-button {
           padding: 8px;
           margin-left: 5px;
@@ -35,18 +33,16 @@
       #artist-search-button {
           cursor: pointer;
       }
-      /* SVG-ul care conține graficul */
       #viz {
-          flex-grow: 1; /* Lăsăm SVG-ul să ocupe spațiul rămas */
-          width: 100%; /* Asigurăm lățimea completă */
-          cursor: grab; /* Cursor inițial pt pan/zoom */
+          flex-grow: 1;
+          width: 100%;
+          cursor: grab;
       }
-       #viz:active {
-           cursor: grabbing; /* Cursor în timpul drag/pan */
+      #viz:active {
+          cursor: grabbing;
       }
-      /* Stil opțional pentru textul nodurilor */
       g.node text {
-          pointer-events: none; /* Textul să nu interfereze cu click-ul pe cerc */
+          pointer-events: none;
       }
   </style>
 </head>
@@ -58,7 +54,8 @@
     <button id="artist-search-button">Caută</button>
   </div>
 
-  <svg id="viz"></svg> <script src="graph.js"></script>
+  <svg id="viz"></svg>
+  <script src="graph.js"></script>
 
 </body>
 </html>
