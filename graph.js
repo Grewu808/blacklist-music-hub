@@ -31,6 +31,22 @@ async function getSpotifyAccessToken() {
 
 async function fetchArtistImage(artistName) {
   try {
+  // Raindrop effect (main)
+  container.append("circle")
+    .attr("cx", clickedNode.x)
+    .attr("cy", clickedNode.y)
+    .attr("r", 0)
+    .attr("fill", "none")
+    .attr("stroke", "#00f")
+    .attr("stroke-width", 3)
+    .attr("stroke-opacity", 0.6)
+    .lower()
+    .transition()
+    .duration(600)
+    .attr("r", 65)
+    .attr("stroke-opacity", 0)
+    .remove();
+
     const token = await getSpotifyAccessToken();
     const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
     const response = await fetch(searchUrl, {
@@ -74,8 +90,7 @@ let simulation = d3.forceSimulation(nodeData)
 const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", e => container.attr("transform", e.transform));
 svg.call(zoom);
 
-let // Move links behind images:
-  link = container.insert("line", "g.node");
+let link = container.selectAll("line.link");
 let nodeGroup = container.selectAll("g.node");
 
 const searchInput = document.getElementById('artist-search-input');
@@ -102,8 +117,7 @@ async function handleSearch() {
   linkData = [];
   simulation.stop();
   container.selectAll("*").remove();
-  // Move links behind images:
-  link = container.insert("line", "g.node");
+  link = container.selectAll("line.link");
   nodeGroup = container.selectAll("g.node");
 
   const imageUrl = await fetchArtistImage(artistName);
@@ -114,22 +128,6 @@ async function handleSearch() {
     y: height / 2 + (Math.random() - 0.5) * 5,
     imageUrl: imageUrl
   });
-      // Secondary ripple effect
-      container.append("circle")
-        .attr("cx", cx + radius * Math.cos(angle))
-        .attr("cy", cy + radius * Math.sin(angle))
-        .attr("r", 0)
-        .attr("fill", "none")
-        .attr("stroke", "#00f")
-        .attr("stroke-width", 1.5)
-        .attr("stroke-opacity", 0.4)
-        .lower()
-        .transition()
-        .duration(600)
-        .attr("r", 40)
-        .attr("stroke-opacity", 0)
-        .remove();
-
 
   svg.call(zoom.transform, d3.zoomIdentity);
   renderGraph();
@@ -148,39 +146,15 @@ function ticked() {
   if (nodeGroup) nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
 }
 
-
-function computeLinkWeights() {
-  const countMap = {};
-  linkData.forEach(l => {
-    const sourceId = l.source.id || l.source;
-    const targetId = l.target.id || l.target;
-    const key = [sourceId, targetId].sort().join('|');
-    countMap[key] = (countMap[key] || 0) + 1;
-  });
-  return countMap;
-}
-
 function renderGraph() {
-  const linkWeights = computeLinkWeights();
-  // Move links behind images:
-  link = container.insert("line", "g.node")
+  link = container.selectAll("line.link")
     .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
     .join(
-      enter => enter.append("line")
+      enter => enter.append("line").lower()
         .attr("class", "link")
-        
-    .attr("stroke", d => {
-      const key = [d.source.id || d.source, d.target.id || d.target].sort().join('|');
-      const count = linkWeights[key] || 1;
-      return count > 1 ? "#f39c12" : "#555";
-    })
-    .attr("stroke-width", d => {
-      const key = [d.source.id || d.source, d.target.id || d.target].sort().join('|');
-      const count = linkWeights[key] || 1;
-      return Math.min(1 + count, 5);
-    })
-    .attr("stroke-opacity", 0.6)
-,
+        .attr("stroke", "#555")
+        .attr("stroke-width", 1)
+        .attr("stroke-opacity", 0.4),
       update => update,
       exit => exit.remove()
     );
@@ -264,24 +238,21 @@ async function expandNode(event, clickedNode) {
   }
 
   try {
-
-  
-    // Ripple effect on clicked node (strong)
-    const ripple = container.append("circle")
-      .attr("cx", clickedNode.x)
-      .attr("cy", clickedNode.y)
-      .attr("r", 0)
-      .attr("fill", "none")
-      .attr("stroke", "#00f")
-      .attr("stroke-width", 3)
-      .attr("stroke-opacity", 0.6)
-      .lower();
-
-    ripple.transition()
-      .duration(600)
-      .attr("r", 70)
-      .attr("stroke-opacity", 0)
-      .remove();
+  // Raindrop effect (main)
+  container.append("circle")
+    .attr("cx", clickedNode.x)
+    .attr("cy", clickedNode.y)
+    .attr("r", 0)
+    .attr("fill", "none")
+    .attr("stroke", "#00f")
+    .attr("stroke-width", 3)
+    .attr("stroke-opacity", 0.6)
+    .lower()
+    .transition()
+    .duration(600)
+    .attr("r", 65)
+    .attr("stroke-opacity", 0)
+    .remove();
 
     const lastFmUrl = `${lastFmApiBaseUrl}/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`;
     const response = await fetch(lastFmUrl);
@@ -300,35 +271,48 @@ async function expandNode(event, clickedNode) {
     const cy = clickedNode.y ?? height / 2;
     const radius = 150;
 
-    for (let i = 0; i < names.length; i++) {
-      const name = names[i];
-      if (existingIds.has(name)) continue;
+    
+for (let i = 0; i < names.length; i++) {
+  const name = names[i];
+  const angle = (2 * Math.PI / names.length) * i;
+  const targetX = cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30;
+  const targetY = cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30;
+  const linkExists = linkData.some(
+    l => (l.source === clickedNode.id && l.target === name) || (l.source === name && l.target === clickedNode.id)
+  );
 
-      let imageUrl = await fetchArtistImage(name);
+  if (!existingIds.has(name)) {
+    let imageUrl = await fetchArtistImage(name);
+    nodeData.push({
+      id: name,
+      imageUrl,
+      x: targetX,
+      y: targetY
+    });
+    linkData.push({ source: clickedNode.id, target: name });
+    existingIds.add(name);
 
-      const angle = (2 * Math.PI / names.length) * i;
-      nodeData.push({
-        id: name,
-        imageUrl,
-        x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30,
-        y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30
-      });
-      // Secondary ripple effect
-      container.append("circle")
-        .attr("cx", cx + radius * Math.cos(angle))
-        .attr("cy", cy + radius * Math.sin(angle))
-        .attr("r", 0)
-        .attr("fill", "none")
-        .attr("stroke", "#00f")
-        .attr("stroke-width", 1.5)
-        .attr("stroke-opacity", 0.4)
-        .lower()
-        .transition()
-        .duration(600)
-        .attr("r", 40)
-        .attr("stroke-opacity", 0)
-        .remove();
+    // Raindrop effect (small)
+    container.append("circle")
+      .attr("cx", targetX)
+      .attr("cy", targetY)
+      .attr("r", 0)
+      .attr("fill", "none")
+      .attr("stroke", "#00f")
+      .attr("stroke-width", 1.5)
+      .attr("stroke-opacity", 0.4)
+      .lower()
+      .transition()
+      .duration(600)
+      .attr("r", 35)
+      .attr("stroke-opacity", 0)
+      .remove();
 
+  } else if (!linkExists) {
+    linkData.push({ source: clickedNode.id, target: name });
+  }
+}
+);
       linkData.push({ source: clickedNode.id, target: name });
       existingIds.add(name);
     }
