@@ -452,9 +452,11 @@ async function expandNode(event, clickedNode) {
     const cy = clickedNode.y ?? height / 2;
     const radius = 130;
 
-    // LOCK clicked node IMMEDIATELY
-    clickedNode.fx = clickedNode.x;
-    clickedNode.fy = clickedNode.y;
+    // LOCK only if x/y exist
+    if (clickedNode.x !== undefined && clickedNode.y !== undefined) {
+      clickedNode.fx = clickedNode.x;
+      clickedNode.fy = clickedNode.y;
+    }
 
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
@@ -478,10 +480,8 @@ async function expandNode(event, clickedNode) {
 
     renderGraph();
 
-    // Restart force after everything is positioned
     simulation.alpha(0.6).restart();
 
-    // Unlock all after 1.5 sec
     setTimeout(() => {
       delete clickedNode.fx;
       delete clickedNode.fy;
