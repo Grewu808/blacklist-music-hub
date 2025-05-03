@@ -170,7 +170,6 @@ function renderGraph() {
       exit => exit.remove()
     );
 
-  
   nodeGroup = container.selectAll("g.node")
     .data(nodeData, d => d.id)
     .join(
@@ -224,11 +223,11 @@ function renderGraph() {
 
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
+        return g;
       },
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
-
 
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
@@ -245,7 +244,6 @@ function renderGraph() {
       exit => exit.remove()
     );
 
-  
   nodeGroup = container.selectAll("g.node")
     .data(nodeData, d => d.id)
     .join(
@@ -299,11 +297,86 @@ function renderGraph() {
 
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
+        return g;
       },
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
 
+  simulation.nodes(nodeData);
+  simulation.force("link").links(linkData);
+  if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
+}
+-${d.target.id || d.target}`)
+    .join(
+      enter => enter.append("line")
+        .attr("class", "link")
+        .attr("stroke", "#555")
+        .attr("stroke-width", 1)
+        .attr("stroke-opacity", 0.4),
+      update => update,
+      exit => exit.remove()
+    );
+
+  nodeGroup = container.selectAll("g.node")
+    .data(nodeData, d => d.id)
+    .join(
+      enter => {
+        const g = enter.append("g").attr("class", "node");
+
+        g.each(function(d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+
+        g.on("mouseover", function(event, d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+
+        g.on("click", (e, d) => {
+          e.stopPropagation();
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          } else {
+            const node = d3.select(e.currentTarget);
+            node.classed("glow-fallback", true);
+            setTimeout(() => node.classed("glow-fallback", false), 500);
+          }
+          expandNode(e, d);
+        });
+
+        g.append("circle")
+          .attr("class", "outer-circle")
+          .attr("r", 28)
+          .attr("fill", "transparent")
+          .attr("stroke", "#aaa")
+          .attr("stroke-width", 1);
+
+        g.append("image")
+          .attr("href", d => d.imageUrl || "default.jpg")
+          .attr("width", 56)
+          .attr("height", 56)
+          .attr("x", -28)
+          .attr("y", -28)
+          .attr("clip-path", "url(#clip-circle)")
+          .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
+
+        g.append("text")
+          .text(d => d.id)
+          .attr("text-anchor", "middle")
+          .attr("dy", 42)
+          .style("font-size", "12px")
+          .style("font-weight", "bold")
+          .style("fill", "#ffffff")
+          .style("pointer-events", "none");
+
+        g.call(drag(simulation));
+        g.attr("transform", d => `translate(${d.x},${d.y})`);
+
+        return g;
+      },,
+      update => update,
+      exit => exit.transition().duration(300).attr("opacity", 0).remove()
+    );
 
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
