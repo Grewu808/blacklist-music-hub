@@ -452,23 +452,17 @@ async function expandNode(event, clickedNode) {
     const cy = clickedNode.y ?? height / 2;
     const radius = 130;
 
-    // Minimal but safe fix
-    clickedNode.fx = clickedNode.x ?? width / 2;
-    clickedNode.fy = clickedNode.y ?? height / 2;
-
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
       if (existingIds.has(name)) continue;
 
       const imageUrl = await fetchArtistImage(name);
       const angle = (2 * Math.PI / names.length) * i;
-      const x = cx + radius * Math.cos(angle);
-      const y = cy + radius * Math.sin(angle);
       nodeData.push({
         id: name,
         imageUrl,
-        x,
-        y
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle)
       });
       linkData.push({ source: clickedNode.id, target: name });
       existingIds.add(name);
@@ -476,11 +470,6 @@ async function expandNode(event, clickedNode) {
 
     renderGraph();
     simulation.alpha(0.6).restart();
-
-    setTimeout(() => {
-      delete clickedNode.fx;
-      delete clickedNode.fy;
-    }, 1200);
 
   } catch (err) {
     console.error("Expand error:", err);
