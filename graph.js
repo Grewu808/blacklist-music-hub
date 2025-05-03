@@ -140,15 +140,6 @@ async function handleSearch() {
 
   svg.call(zoom.transform, d3.zoomIdentity);
   
-    
-    if (navigator.vibrate) {
-      navigator.vibrate([30, 20, 30]);
-    } else {
-      const sel = d3.select(event.currentTarget);
-      sel.classed("glow-fallback", true);
-      setTimeout(() => sel.classed("glow-fallback", false), 500);
-    }
-
 renderGraph();
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
@@ -335,15 +326,6 @@ async function expandNode(event, clickedNode) {
     delete clickedNode.fx;
     delete clickedNode.fy;
     
-    
-    if (navigator.vibrate) {
-      navigator.vibrate([30, 20, 30]);
-    } else {
-      const sel = d3.select(event.currentTarget);
-      sel.classed("glow-fallback", true);
-      setTimeout(() => sel.classed("glow-fallback", false), 500);
-    }
-
 renderGraph();
     simulation.alpha(0.3).restart();
   } catch (err) {
