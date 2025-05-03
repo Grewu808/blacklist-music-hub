@@ -452,12 +452,6 @@ async function expandNode(event, clickedNode) {
     const cy = clickedNode.y ?? height / 2;
     const radius = 130;
 
-    // LOCK only if x/y exist
-    if (clickedNode.x !== undefined && clickedNode.y !== undefined) {
-      clickedNode.fx = clickedNode.x;
-      clickedNode.fy = clickedNode.y;
-    }
-
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
       if (existingIds.has(name)) continue;
@@ -470,26 +464,14 @@ async function expandNode(event, clickedNode) {
         id: name,
         imageUrl,
         x,
-        y,
-        fx: x,
-        fy: y
+        y
       });
       linkData.push({ source: clickedNode.id, target: name });
       existingIds.add(name);
     }
 
     renderGraph();
-
     simulation.alpha(0.6).restart();
-
-    setTimeout(() => {
-      delete clickedNode.fx;
-      delete clickedNode.fy;
-      nodeData.forEach(n => {
-        if (n.fx) delete n.fx;
-        if (n.fy) delete n.fy;
-      });
-    }, 1500);
 
   } catch (err) {
     console.error("Expand error:", err);
