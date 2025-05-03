@@ -223,7 +223,7 @@ function renderGraph() {
 
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
-        return g;
+        
       },
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
@@ -298,7 +298,7 @@ function renderGraph() {
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
 
-        return g;
+        
       },,
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
