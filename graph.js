@@ -173,30 +173,26 @@ function renderGraph() {
     .data(nodeData, d => d.id)
     .join(
       enter => {
-const g = enter.append("g").attr("class", "node");
+        const g = enter.append("g").attr("class", "node");
 
-    g.each(function(d) {
-      rippleEffect(d3.select(this), "#ffffff", 60, 700);
-    });
+        g.each(function(d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
 
-    g.on("mouseover", function(event, d) {
-      rippleEffect(d3.select(this), "#ffffff", 60, 700);
-    });
-
+        g.on("mouseover", function(event, d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
 
         g.on("click", (e, d) => {
           e.stopPropagation();
-          
-          
           if (navigator.vibrate) {
             navigator.vibrate(50);
           } else {
-            const node = d3.select(this);
+            const node = d3.select(e.currentTarget);
             node.classed("glow-fallback", true);
             setTimeout(() => node.classed("glow-fallback", false), 500);
           }
-
-expandNode(e, d);
+          expandNode(e, d);
         });
 
         g.append("circle")
@@ -228,7 +224,7 @@ expandNode(e, d);
         g.attr("transform", d => `translate(${d.x},${d.y})`);
 
         return g;
-      },
+      },,
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
