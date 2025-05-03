@@ -1,4 +1,4 @@
-// ------------ graph.js (Hybrid Last.fm + Spotify) ------------
+// ------------ graph.js (Hybrid Last.fm + Spotify) - Full Upgrade FINAL ------------
 
 const spotifyClientId = '38d179166ca140e498c596340451c1b5';
 const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1';
@@ -47,6 +47,9 @@ async function fetchArtistImage(artistName) {
   return 'default.jpg';
 }
 
+const spotifyApiBaseUrl = 'https://api.spotify.com/v1';
+const lastFmApiBaseUrl = 'https://ws.audioscrobbler.com/2.0';
+
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -57,21 +60,6 @@ svg.append("defs").append("clipPath")
   .attr("id", "clip-circle")
   .append("circle")
   .attr("r", 28);
-
-// Inject fallback glow + hover scale
-const style1 = document.createElement('style');
-style1.innerHTML = `
-  g.node.glow-fallback circle.outer-circle {
-    stroke: #ffff99;
-    stroke-width: 3;
-    filter: drop-shadow(0 0 6px #ffff99);
-  }
-  g.node:hover {
-    transform: scale(1.05);
-    transition: transform 0.2s ease-out;
-  }
-`;
-document.head.appendChild(style1);
 
 let nodeData = [];
 let linkData = [];
@@ -88,6 +76,31 @@ svg.call(zoom);
 
 let link = container.selectAll("line.link");
 let nodeGroup = container.selectAll("g.node");
+
+
+
+// Inject CSS for fallback glow effect
+const fallbackStyle = document.createElement('style');
+fallbackStyle.innerHTML = `
+  g.node.glow-fallback circle.outer-circle {
+    stroke: #ffff99;
+    stroke-width: 3;
+    filter: drop-shadow(0px 0px 6px #ffff99);
+  }
+`;
+document.head.appendChild(fallbackStyle);
+
+
+// Inject CSS for hover scaling effect
+const style = document.createElement('style');
+style.innerHTML = `
+  g.node:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease-out;
+  }
+`;
+document.head.appendChild(style);
+
 
 const searchInput = document.getElementById('artist-search-input');
 const searchButton = document.getElementById('artist-search-button');
@@ -113,6 +126,8 @@ async function handleSearch() {
   linkData = [];
   simulation.stop();
   container.selectAll("*").remove();
+  link = container.selectAll("line.link");
+  nodeGroup = container.selectAll("g.node");
 
   const imageUrl = await fetchArtistImage(artistName);
 
@@ -124,37 +139,23 @@ async function handleSearch() {
   });
 
   svg.call(zoom.transform, d3.zoomIdentity);
-  renderGraph();
+  
+renderGraph();
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
   simulation.alpha(0.3).restart();
 }
 
 function ticked() {
-  link
+  if (link) link
     .attr("x1", d => d.source.x)
     .attr("y1", d => d.source.y)
     .attr("x2", d => d.target.x)
     .attr("y2", d => d.target.y);
-  nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+
+  if (nodeGroup) nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
 }
 
-function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
-  selection.each(function(d) {
-    const g = d3.select(this);
-    const ripple = g.insert("circle", ":first-child")
-      .attr("r", 0)
-      .attr("fill", "none")
-      .attr("stroke", color)
-      .attr("stroke-width", 2)
-      .attr("opacity", 0.8);
-    ripple.transition()
-      .duration(duration)
-      .attr("r", maxRadius)
-      .attr("opacity", 0)
-      .remove();
-  });
-}
 
 function renderGraph() {
   link = container.selectAll("line.link")
@@ -222,7 +223,158 @@ function renderGraph() {
 
         g.call(drag(simulation));
         g.attr("transform", d => `translate(${d.x},${d.y})`);
+        return g;
       },
+      update => update,
+      exit => exit.transition().duration(300).attr("opacity", 0).remove()
+    );
+
+  simulation.nodes(nodeData);
+  simulation.force("link").links(linkData);
+  if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
+}
+  
+}-${d.target.id || d.target}`)
+    .join(
+      enter => enter.append("line")
+        .attr("class", "link")
+        .attr("stroke", "#555")
+        .attr("stroke-width", 1)
+        .attr("stroke-opacity", 0.4),
+      update => update,
+      exit => exit.remove()
+    );
+
+  nodeGroup = container.selectAll("g.node")
+    .data(nodeData, d => d.id)
+    .join(
+      enter => {
+        const g = enter.append("g").attr("class", "node");
+
+        g.each(function(d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+
+        g.on("mouseover", function(event, d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+
+        g.on("click", (e, d) => {
+          e.stopPropagation();
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          } else {
+            const node = d3.select(e.currentTarget);
+            node.classed("glow-fallback", true);
+            setTimeout(() => node.classed("glow-fallback", false), 500);
+          }
+          expandNode(e, d);
+        });
+
+        g.append("circle")
+          .attr("class", "outer-circle")
+          .attr("r", 28)
+          .attr("fill", "transparent")
+          .attr("stroke", "#aaa")
+          .attr("stroke-width", 1);
+
+        g.append("image")
+          .attr("href", d => d.imageUrl || "default.jpg")
+          .attr("width", 56)
+          .attr("height", 56)
+          .attr("x", -28)
+          .attr("y", -28)
+          .attr("clip-path", "url(#clip-circle)")
+          .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
+
+        g.append("text")
+          .text(d => d.id)
+          .attr("text-anchor", "middle")
+          .attr("dy", 42)
+          .style("font-size", "12px")
+          .style("font-weight", "bold")
+          .style("fill", "#ffffff")
+          .style("pointer-events", "none");
+
+        g.call(drag(simulation));
+        g.attr("transform", d => `translate(${d.x},${d.y})`);
+        return g;
+      },
+      update => update,
+      exit => exit.transition().duration(300).attr("opacity", 0).remove()
+    );
+
+  simulation.nodes(nodeData);
+  simulation.force("link").links(linkData);
+  if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
+}
+-${d.target.id || d.target}`)
+    .join(
+      enter => enter.append("line")
+        .attr("class", "link")
+        .attr("stroke", "#555")
+        .attr("stroke-width", 1)
+        .attr("stroke-opacity", 0.4),
+      update => update,
+      exit => exit.remove()
+    );
+
+  nodeGroup = container.selectAll("g.node")
+    .data(nodeData, d => d.id)
+    .join(
+      enter => {
+        const g = enter.append("g").attr("class", "node");
+
+        g.each(function(d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+
+        g.on("mouseover", function(event, d) {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        });
+
+        g.on("click", (e, d) => {
+          e.stopPropagation();
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          } else {
+            const node = d3.select(e.currentTarget);
+            node.classed("glow-fallback", true);
+            setTimeout(() => node.classed("glow-fallback", false), 500);
+          }
+          expandNode(e, d);
+        });
+
+        g.append("circle")
+          .attr("class", "outer-circle")
+          .attr("r", 28)
+          .attr("fill", "transparent")
+          .attr("stroke", "#aaa")
+          .attr("stroke-width", 1);
+
+        g.append("image")
+          .attr("href", d => d.imageUrl || "default.jpg")
+          .attr("width", 56)
+          .attr("height", 56)
+          .attr("x", -28)
+          .attr("y", -28)
+          .attr("clip-path", "url(#clip-circle)")
+          .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
+
+        g.append("text")
+          .text(d => d.id)
+          .attr("text-anchor", "middle")
+          .attr("dy", 42)
+          .style("font-size", "12px")
+          .style("font-weight", "bold")
+          .style("fill", "#ffffff")
+          .style("pointer-events", "none");
+
+        g.call(drag(simulation));
+        g.attr("transform", d => `translate(${d.x},${d.y})`);
+
+        return g;
+      },,
       update => update,
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
@@ -239,6 +391,27 @@ function drag(sim) {
     d.fy = d.y;
     svg.on(".zoom", null);
   }
+
+
+function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
+  selection.each(function(d) {
+    const g = d3.select(this);
+
+    const ripple = g.insert("circle", ":first-child")
+      .attr("r", 0)
+      .attr("fill", "none")
+      .attr("stroke", color)
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.8);
+
+    ripple.transition()
+      .duration(duration)
+      .attr("r", maxRadius)
+      .attr("opacity", 0)
+      .remove();
+  });
+}
+
   function dragged(e, d) {
     d.fx = e.x;
     d.fy = e.y;
@@ -277,7 +450,15 @@ async function expandNode(event, clickedNode) {
     const existingIds = new Set(nodeData.map(n => n.id));
     const cx = clickedNode.x ?? width / 2;
     const cy = clickedNode.y ?? height / 2;
-    const radius = 150;
+    const radius = 130;
+
+    // Fix center node temporar
+    clickedNode.fx = cx;
+    clickedNode.fy = cy;
+    setTimeout(() => {
+      delete clickedNode.fx;
+      delete clickedNode.fy;
+    }, 1500);
 
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
@@ -288,18 +469,15 @@ async function expandNode(event, clickedNode) {
       nodeData.push({
         id: name,
         imageUrl,
-        x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30,
-        y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle)
       });
       linkData.push({ source: clickedNode.id, target: name });
       existingIds.add(name);
     }
 
-    delete clickedNode.fx;
-    delete clickedNode.fy;
-
     renderGraph();
-    simulation.alpha(0.3).restart();
+    simulation.alpha(0.6).restart();
   } catch (err) {
     console.error("Expand error:", err);
   } finally {
@@ -309,3 +487,5 @@ async function expandNode(event, clickedNode) {
     }
   }
 }
+
+// ------------ FINAL ------------
