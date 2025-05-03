@@ -31,22 +31,6 @@ async function getSpotifyAccessToken() {
 
 async function fetchArtistImage(artistName) {
   try {
-  // Raindrop effect (main)
-  container.append("circle")
-    .attr("cx", clickedNode.x)
-    .attr("cy", clickedNode.y)
-    .attr("r", 0)
-    .attr("fill", "none")
-    .attr("stroke", "#00f")
-    .attr("stroke-width", 3)
-    .attr("stroke-opacity", 0.6)
-    .lower()
-    .transition()
-    .duration(600)
-    .attr("r", 65)
-    .attr("stroke-opacity", 0)
-    .remove();
-
     const token = await getSpotifyAccessToken();
     const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
     const response = await fetch(searchUrl, {
@@ -150,7 +134,7 @@ function renderGraph() {
   link = container.selectAll("line.link")
     .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
     .join(
-      enter => enter.append("line").lower()
+      enter => enter.append("line")
         .attr("class", "link")
         .attr("stroke", "#555")
         .attr("stroke-width", 1)
@@ -238,22 +222,6 @@ async function expandNode(event, clickedNode) {
   }
 
   try {
-  // Raindrop effect (main)
-  container.append("circle")
-    .attr("cx", clickedNode.x)
-    .attr("cy", clickedNode.y)
-    .attr("r", 0)
-    .attr("fill", "none")
-    .attr("stroke", "#00f")
-    .attr("stroke-width", 3)
-    .attr("stroke-opacity", 0.6)
-    .lower()
-    .transition()
-    .duration(600)
-    .attr("r", 65)
-    .attr("stroke-opacity", 0)
-    .remove();
-
     const lastFmUrl = `${lastFmApiBaseUrl}/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`;
     const response = await fetch(lastFmUrl);
     if (!response.ok) throw new Error("Last.fm fetch failed");
@@ -271,48 +239,19 @@ async function expandNode(event, clickedNode) {
     const cy = clickedNode.y ?? height / 2;
     const radius = 150;
 
-    
-for (let i = 0; i < names.length; i++) {
-  const name = names[i];
-  const angle = (2 * Math.PI / names.length) * i;
-  const targetX = cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30;
-  const targetY = cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30;
-  const linkExists = linkData.some(
-    l => (l.source === clickedNode.id && l.target === name) || (l.source === name && l.target === clickedNode.id)
-  );
+    for (let i = 0; i < names.length; i++) {
+      const name = names[i];
+      if (existingIds.has(name)) continue;
 
-  if (!existingIds.has(name)) {
-    let imageUrl = await fetchArtistImage(name);
-    nodeData.push({
-      id: name,
-      imageUrl,
-      x: targetX,
-      y: targetY
-    });
-    linkData.push({ source: clickedNode.id, target: name });
-    existingIds.add(name);
+      let imageUrl = await fetchArtistImage(name);
 
-    // Raindrop effect (small)
-    container.append("circle")
-      .attr("cx", targetX)
-      .attr("cy", targetY)
-      .attr("r", 0)
-      .attr("fill", "none")
-      .attr("stroke", "#00f")
-      .attr("stroke-width", 1.5)
-      .attr("stroke-opacity", 0.4)
-      .lower()
-      .transition()
-      .duration(600)
-      .attr("r", 35)
-      .attr("stroke-opacity", 0)
-      .remove();
-
-  } else if (!linkExists) {
-    linkData.push({ source: clickedNode.id, target: name });
-  }
-}
-);
+      const angle = (2 * Math.PI / names.length) * i;
+      nodeData.push({
+        id: name,
+        imageUrl,
+        x: cx + radius * Math.cos(angle) + (Math.random() - 0.5) * 30,
+        y: cy + radius * Math.sin(angle) + (Math.random() - 0.5) * 30
+      });
       linkData.push({ source: clickedNode.id, target: name });
       existingIds.add(name);
     }
