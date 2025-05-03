@@ -77,6 +77,31 @@ svg.call(zoom);
 let link = container.selectAll("line.link");
 let nodeGroup = container.selectAll("g.node");
 
+
+
+// Inject CSS for fallback glow effect
+const fallbackStyle = document.createElement('style');
+fallbackStyle.innerHTML = `
+  g.node.glow-fallback circle.outer-circle {
+    stroke: #ffff99;
+    stroke-width: 3;
+    filter: drop-shadow(0px 0px 6px #ffff99);
+  }
+`;
+document.head.appendChild(fallbackStyle);
+
+
+// Inject CSS for hover scaling effect
+const style = document.createElement('style');
+style.innerHTML = `
+  g.node:hover {
+    transform: scale(1.05);
+    transition: transform 0.2s ease-out;
+  }
+`;
+document.head.appendChild(style);
+
+
 const searchInput = document.getElementById('artist-search-input');
 const searchButton = document.getElementById('artist-search-button');
 
@@ -114,7 +139,17 @@ async function handleSearch() {
   });
 
   svg.call(zoom.transform, d3.zoomIdentity);
-  renderGraph();
+  
+    
+    if (navigator.vibrate) {
+      navigator.vibrate([30, 20, 30]);
+    } else {
+      const sel = d3.select(event.currentTarget);
+      sel.classed("glow-fallback", true);
+      setTimeout(() => sel.classed("glow-fallback", false), 500);
+    }
+
+renderGraph();
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
   simulation.alpha(0.3).restart();
@@ -147,11 +182,30 @@ function renderGraph() {
     .data(nodeData, d => d.id)
     .join(
       enter => {
-        const g = enter.append("g").attr("class", "node");
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                
+    g.each(function(d) {
+      rippleEffect(d3.select(this), "#ffffff", 60, 700);
+    });
+
+    g.on("mouseover", function(event, d) {
+      rippleEffect(d3.select(this), "#ffffff", 60, 700);
+    });
+
+const g = enter.append("g").attr("class", "node");
 
         g.on("click", (e, d) => {
           e.stopPropagation();
-          expandNode(e, d);
+          
+          
+          if (navigator.vibrate) {
+            navigator.vibrate(50);
+          } else {
+            const node = d3.select(this);
+            node.classed("glow-fallback", true);
+            setTimeout(() => node.classed("glow-fallback", false), 500);
+          }
+
+expandNode(e, d);
         });
 
         g.append("circle")
@@ -200,6 +254,27 @@ function drag(sim) {
     d.fy = d.y;
     svg.on(".zoom", null);
   }
+
+
+function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
+  selection.each(function(d) {
+    const g = d3.select(this);
+
+    const ripple = g.insert("circle", ":first-child")
+      .attr("r", 0)
+      .attr("fill", "none")
+      .attr("stroke", color)
+      .attr("stroke-width", 2)
+      .attr("opacity", 0.8);
+
+    ripple.transition()
+      .duration(duration)
+      .attr("r", maxRadius)
+      .attr("opacity", 0)
+      .remove();
+  });
+}
+
   function dragged(e, d) {
     d.fx = e.x;
     d.fy = e.y;
@@ -217,6 +292,7 @@ async function expandNode(event, clickedNode) {
 
   const nodeEl = event.currentTarget ? d3.select(event.currentTarget) : null;
   if (nodeEl && !nodeEl.empty()) {
+    rippleEffect(nodeEl, "#ffffff", 60, 700);
     nodeEl.select("image").style("opacity", 0.5);
     nodeEl.select(".outer-circle").style("stroke", "#f0f0f0");
   }
@@ -258,7 +334,17 @@ async function expandNode(event, clickedNode) {
 
     delete clickedNode.fx;
     delete clickedNode.fy;
-    renderGraph();
+    
+    
+    if (navigator.vibrate) {
+      navigator.vibrate([30, 20, 30]);
+    } else {
+      const sel = d3.select(event.currentTarget);
+      sel.classed("glow-fallback", true);
+      setTimeout(() => sel.classed("glow-fallback", false), 500);
+    }
+
+renderGraph();
     simulation.alpha(0.3).restart();
   } catch (err) {
     console.error("Expand error:", err);
