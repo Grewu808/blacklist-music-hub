@@ -223,6 +223,7 @@ function renderGraph() {
   if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
 }
 
+
 async function expandNode(event, clickedNode) {
   const artistName = clickedNode.id;
   if (!artistName) return;
@@ -241,6 +242,7 @@ async function expandNode(event, clickedNode) {
     const names = similar.filter(a => a.name && a.name.toLowerCase() !== artistName.toLowerCase()).slice(0, 6).map(a => a.name);
 
     const existingIds = new Set(nodeData.map(n => n.id));
+    const existingLinks = new Set(linkData.map(d => `${d.source}-${d.target}`));
     const cx = clickedNode.x ?? width / 2;
     const cy = clickedNode.y ?? height / 2;
     const radius = 130;
@@ -250,16 +252,23 @@ async function expandNode(event, clickedNode) {
 
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
-      if (existingIds.has(name)) continue;
-      const imageUrl = await fetchArtistImage(name);
-      const angle = (2 * Math.PI / names.length) * i;
-      nodeData.push({
-        id: name,
-        imageUrl,
-        x: cx + radius * Math.cos(angle),
-        y: cy + radius * Math.sin(angle)
-      });
-      linkData.push({ source: clickedNode.id, target: name });
+
+      if (!existingIds.has(name)) {
+        const imageUrl = await fetchArtistImage(name);
+        const angle = (2 * Math.PI / names.length) * i;
+        nodeData.push({
+          id: name,
+          imageUrl,
+          x: cx + radius * Math.cos(angle),
+          y: cy + radius * Math.sin(angle)
+        });
+      }
+
+      const keyA = `${clickedNode.id}-${name}`;
+      const keyB = `${name}-${clickedNode.id}`;
+      if (!existingLinks.has(keyA) && !existingLinks.has(keyB)) {
+        linkData.push({ source: clickedNode.id, target: name });
+      }
     }
 
     renderGraph();
