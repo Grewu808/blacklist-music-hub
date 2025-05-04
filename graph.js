@@ -159,55 +159,10 @@ function renderGraph() {
           rippleEffect(d3.select(this), "#ffffff", 60, 700);
         });
 
+        g.on("mouseover", function() {
+          rippleEffect(d3.select(this), "#ffffff", 60, 700);
         
-g.on("mouseover", function(event, d) {
-  rippleEffect(d3.select(this), "#ffffff", 60, 700);
-  playArtistPreview(d.id);
-  hoverTimeout = setTimeout(() => {
-    showArtistTooltip(event, d);
-  }, 600);
-});
-
-g.on("mouseout", function() {
-  clearTimeout(hoverTimeout);
-  hideArtistTooltip();
-});
-
-// LONG PRESS on touch devices
-g.on("touchstart", function(event, d) {
-  if (event.touches.length > 1) return;
-  const touch = event.touches[0];
-  const target = d3.select(this);
-
-  const [x, y] = d3.pointer(touch, document.body);
-
-  holdCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-  holdCircle.setAttribute("cx", x);
-  holdCircle.setAttribute("cy", y);
-  holdCircle.setAttribute("r", "0");
-  holdCircle.setAttribute("stroke", "#00ff88");
-  holdCircle.setAttribute("stroke-width", "3");
-  holdCircle.setAttribute("fill", "none");
-  holdCircle.setAttribute("id", "hold-progress");
-  document.querySelector("svg").appendChild(holdCircle);
-
-  let radius = 0;
-  touchTimer = setInterval(() => {
-    radius += 2;
-    holdCircle.setAttribute("r", radius);
-    if (radius >= 28) {
-      clearInterval(touchTimer);
-      showArtistTooltip(event, d);
-    }
-  }, 50);
-});
-
-g.on("touchend", function() {
-  clearInterval(touchTimer);
-  const existing = document.getElementById("hold-progress");
-  if (existing) existing.remove();
-});
-
+          playArtistPreview(d.id);});
 
         g.on("click", (e, d) => {
           e.stopPropagation();
@@ -375,54 +330,3 @@ document.body.addEventListener("click", (e) => {
     audioPlayer.pause();
   }
 }, true);
-
-
-
-let hoverTimeout;
-let touchTimer;
-let holdCircle;
-
-function showArtistTooltip(event, d) {
-  hideArtistTooltip();
-
-  const tooltip = document.createElement("div");
-  tooltip.id = "artist-tooltip";
-  tooltip.style.position = "absolute";
-  tooltip.style.left = (event.pageX || event.touches?.[0]?.pageX || 0) + 15 + "px";
-  tooltip.style.top = (event.pageY || event.touches?.[0]?.pageY || 0) - 30 + "px";
-  tooltip.style.background = "#111";
-  tooltip.style.color = "#fff";
-  tooltip.style.padding = "10px";
-  tooltip.style.borderRadius = "8px";
-  tooltip.style.boxShadow = "0 4px 10px rgba(0,0,0,0.5)";
-  tooltip.style.zIndex = "9999";
-  tooltip.style.maxWidth = "250px";
-  tooltip.style.fontSize = "14px";
-
-  tooltip.innerHTML = `
-    <div style="font-weight: bold; font-size: 16px; margin-bottom: 5px;">${d.id}</div>
-    <div id="tooltip-bio">CÄutÄm informaÈii...</div>
-    <button onclick="openFullArtistPage('${d.id}')" style="margin-top: 8px; padding: 5px 10px; font-size: 13px;">Vezi mai mult</button>
-  `;
-
-  document.body.appendChild(tooltip);
-
-  fetch(\`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=\${encodeURIComponent(d.id)}&api_key=\${lastFmApiKey}&format=json\`)
-    .then(res => res.json())
-    .then(data => {
-      const bio = data?.artist?.bio?.summary || "FÄrÄ descriere.";
-      document.getElementById("tooltip-bio").innerHTML = bio.split("<a")[0].trim();
-    })
-    .catch(() => {
-      document.getElementById("tooltip-bio").innerHTML = "InformaÈii indisponibile.";
-    });
-}
-
-function hideArtistTooltip() {
-  const existing = document.getElementById("artist-tooltip");
-  if (existing) existing.remove();
-}
-
-function openFullArtistPage(artistName) {
-  alert("Pagina completÄ pentru: " + artistName);
-}
