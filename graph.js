@@ -111,13 +111,29 @@ async function handleSearch() {
   simulation.alpha(0.3).restart();
 }
 
+
 function ticked() {
-  link.attr("x1", d => d.source.x)
-      .attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x)
-      .attr("y2", d => d.target.y);
+  link
+    .attr("x1", d => adjustEdge(d.source, d.target).x1)
+    .attr("y1", d => adjustEdge(d.source, d.target).y1)
+    .attr("x2", d => adjustEdge(d.source, d.target).x2)
+    .attr("y2", d => adjustEdge(d.source, d.target).y2);
 
   nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+}
+
+function adjustEdge(source, target, radius = 28) {
+  const dx = target.x - source.x;
+  const dy = target.y - source.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const ratio = (dist - radius) / dist;
+  const x1 = source.x + dx * (radius / dist);
+  const y1 = source.y + dy * (radius / dist);
+  const x2 = source.x + dx * ratio;
+  const y2 = source.y + dy * ratio;
+  return { x1, y1, x2, y2 };
+}
+,${d.y})`);
 }
 
 function renderGraph() {
