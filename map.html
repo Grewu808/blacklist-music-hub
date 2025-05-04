@@ -44,6 +44,11 @@
       text-align: center;
     }
 
+    #artist-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
     #artist-search-button {
       padding: 8px 14px;
       border-radius: 6px;
@@ -55,24 +60,21 @@
       font-size: 15px;
     }
 
+    #oneway-btn {
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      background-color: #333;
+      color: #aaa;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 15px;
+    }
+
     svg {
       width: 100vw;
       height: 100vh;
       display: block;
-    }
-
-    #oneway-btn {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      padding: 12px 18px;
-      border: none;
-      background: #00cc66;
-      color: #fff;
-      font-weight: bold;
-      border-radius: 6px;
-      z-index: 999;
-      cursor: pointer;
     }
   </style>
 </head>
@@ -80,12 +82,13 @@
   <div id="controls">
     <label for="artist-search-input">Artist Favorit:</label>
     <input id="artist-search-input" type="text" placeholder="ex: Eminem" />
-    <button id="artist-search-button">Caută</button>
+    <div id="artist-buttons">
+      <button id="artist-search-button">Caută</button>
+      <button id="oneway-btn">One Way Radio</button>
+    </div>
   </div>
 
   <svg id="viz"></svg>
-
-  <button id="oneway-btn">One Way Radio</button>
 
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="graph.js"></script>
