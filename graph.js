@@ -1,6 +1,3 @@
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-import { fetchSimilarArtists, fetchArtistImage } from "./api.js";
-
 const width = window.innerWidth;
 const height = window.innerHeight;
 
@@ -98,7 +95,7 @@ async function handleClick(event, d) {
   updateGraph();
 }
 
-export async function searchArtist(name) {
+async function searchArtist(name) {
   nodes = [];
   links = [];
   nodeById.clear();
@@ -119,3 +116,5 @@ export async function searchArtist(name) {
 
   updateGraph();
 }
+
+window.searchArtist = searchArtist;
