@@ -115,13 +115,8 @@ async function handleClick(event, d) {
   updateGraph();
 }
 
-export async function searchArtist(name) {
-  nodes = [];
-  links = [];
-  nodeById.clear();
-  linkById.clear();
-  svg.selectAll("*").remove();
-
+(async function start() {
+  const name = "Nas";
   const image = await fetchArtistImage(name);
   const root = { id: name, image };
   addNode(root);
@@ -135,4 +130,4 @@ export async function searchArtist(name) {
   }
 
   updateGraph();
-}
+})();
