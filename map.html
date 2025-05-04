@@ -60,6 +60,20 @@
       height: 100vh;
       display: block;
     }
+
+    #oneway-btn {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      padding: 12px 18px;
+      border: none;
+      background: #00cc66;
+      color: #fff;
+      font-weight: bold;
+      border-radius: 6px;
+      z-index: 999;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -71,7 +85,109 @@
 
   <svg id="viz"></svg>
 
+  <button id="oneway-btn">One Way Radio</button>
+
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="graph.js"></script>
+
+  <script>
+    const radioContextKey = "oneway_context";
+    const radioPlayedKey = "oneway_played";
+    let currentTrackIndex = 0;
+    let playlist = [];
+    let audio = new Audio();
+
+    function getContextArtists() {
+      const raw = localStorage.getItem(radioContextKey);
+      if (!raw) return ["Nas", "J Dilla", "MF DOOM"];
+      return JSON.parse(raw);
+    }
+
+    function saveContextArtist(artistName) {
+      let list = getContextArtists();
+      if (!list.includes(artistName)) {
+        list.push(artistName);
+        if (list.length > 5) list.shift();
+        localStorage.setItem(radioContextKey, JSON.stringify(list));
+      }
+    }
+
+    function getPlayedTracks() {
+      const raw = localStorage.getItem(radioPlayedKey);
+      return raw ? JSON.parse(raw) : [];
+    }
+
+    function markTrackPlayed(trackId) {
+      const list = getPlayedTracks();
+      list.push(trackId);
+      localStorage.setItem(radioPlayedKey, JSON.stringify(list));
+    }
+
+    function fetchTracksForContext(callback) {
+      const artists = getContextArtists();
+      const query = artists[Math.floor(Math.random() * artists.length)];
+      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=25`)
+        .then(res => res.json())
+        .then(data => {
+          const played = getPlayedTracks();
+          const filtered = data.results.filter(track => track.previewUrl && !played.includes(track.trackId));
+          callback(filtered);
+        });
+    }
+
+    function showRadioUI(track) {
+      let wrapper = document.getElementById("radio-wrapper");
+      if (!wrapper) {
+        wrapper = document.createElement("div");
+        wrapper.id = "radio-wrapper";
+        wrapper.style = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#111;padding:20px;border-radius:8px;color:#fff;z-index:9999;text-align:center;width:260px;";
+        wrapper.innerHTML = `
+          <div id="radio-cover" style="margin-bottom:10px;"></div>
+          <div id="radio-title" style="font-weight:bold;font-size:14px;margin-bottom:4px;"></div>
+          <div id="radio-artist" style="font-size:13px;color:#aaa;margin-bottom:10px;"></div>
+          <div>
+            <button id="radio-play">Play</button>
+            <button id="radio-pause">Pause</button>
+            <button id="radio-next">Next</button>
+          </div>
+        `;
+        document.body.appendChild(wrapper);
+
+        document.getElementById("radio-play").onclick = () => audio.play();
+        document.getElementById("radio-pause").onclick = () => audio.pause();
+        document.getElementById("radio-next").onclick = () => playNextTrack();
+      }
+
+      document.getElementById("radio-cover").innerHTML = `<img src="${track.artworkUrl100}" style="width:100px;border-radius:4px;" />`;
+      document.getElementById("radio-title").textContent = track.trackName;
+      document.getElementById("radio-artist").textContent = track.artistName;
+
+      audio.src = track.previewUrl;
+      audio.play();
+
+      markTrackPlayed(track.trackId);
+    }
+
+    function playNextTrack() {
+      if (playlist.length === 0) {
+        fetchTracksForContext(tracks => {
+          playlist = tracks;
+          if (playlist.length > 0) {
+            showRadioUI(playlist[0]);
+            playlist.shift();
+          } else {
+            alert("No more tracks found for your journey.");
+          }
+        });
+      } else {
+        showRadioUI(playlist[0]);
+        playlist.shift();
+      }
+    }
+
+    document.getElementById("oneway-btn").addEventListener("click", () => {
+      playNextTrack();
+    });
+  </script>
 </body>
 </html>
