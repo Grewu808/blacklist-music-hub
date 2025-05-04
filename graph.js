@@ -111,30 +111,14 @@ async function handleSearch() {
   simulation.alpha(0.3).restart();
 }
 
-
 function ticked() {
-  link
-    .attr("x1", d => adjustEdge(d.source, d.target).x1)
-    .attr("y1", d => adjustEdge(d.source, d.target).y1)
-    .attr("x2", d => adjustEdge(d.source, d.target).x2)
-    .attr("y2", d => adjustEdge(d.source, d.target).y2);
+  link.attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
 
   nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
 }
-
-function adjustEdge(source, target, radius = 28) {
-  const dx = target.x - source.x;
-  const dy = target.y - source.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist === 0) return { x1: source.x, y1: source.y, x2: target.x, y2: target.y };
-  const ratio = (dist - radius) / dist;
-  const x1 = source.x + dx * (radius / dist);
-  const y1 = source.y + dy * (radius / dist);
-  const x2 = source.x + dx * ratio;
-  const y2 = source.y + dy * ratio;
-  return { x1, y1, x2, y2 };
-}
-
 
 function renderGraph() {
   link = container.selectAll("line.link")
@@ -159,7 +143,12 @@ function renderGraph() {
           rippleEffect(d3.select(this), "#ffffff", 60, 700);
         });
 
-        g.on("mouseover", function() {
+        
+        g.on("mouseover", (e, d) => {
+          rippleEffect(d3.select(e.currentTarget), "#ffffff", 60, 700);
+          playArtistPreview(d.id);
+        });
+g.on("mouseover", function() {
           rippleEffect(d3.select(this), "#ffffff", 60, 700);
         });
 
@@ -223,7 +212,6 @@ function renderGraph() {
   if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
 }
 
-
 async function expandNode(event, clickedNode) {
   const artistName = clickedNode.id;
   if (!artistName) return;
@@ -242,7 +230,6 @@ async function expandNode(event, clickedNode) {
     const names = similar.filter(a => a.name && a.name.toLowerCase() !== artistName.toLowerCase()).slice(0, 6).map(a => a.name);
 
     const existingIds = new Set(nodeData.map(n => n.id));
-    const existingLinks = new Set(linkData.map(d => `${d.source}-${d.target}`));
     const cx = clickedNode.x ?? width / 2;
     const cy = clickedNode.y ?? height / 2;
     const radius = 130;
@@ -252,23 +239,16 @@ async function expandNode(event, clickedNode) {
 
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
-
-      if (!existingIds.has(name)) {
-        const imageUrl = await fetchArtistImage(name);
-        const angle = (2 * Math.PI / names.length) * i;
-        nodeData.push({
-          id: name,
-          imageUrl,
-          x: cx + radius * Math.cos(angle),
-          y: cy + radius * Math.sin(angle)
-        });
-      }
-
-      const keyA = `${clickedNode.id}-${name}`;
-      const keyB = `${name}-${clickedNode.id}`;
-      if (!existingLinks.has(keyA) && !existingLinks.has(keyB)) {
-        linkData.push({ source: clickedNode.id, target: name });
-      }
+      if (existingIds.has(name)) continue;
+      const imageUrl = await fetchArtistImage(name);
+      const angle = (2 * Math.PI / names.length) * i;
+      nodeData.push({
+        id: name,
+        imageUrl,
+        x: cx + radius * Math.cos(angle),
+        y: cy + radius * Math.sin(angle)
+      });
+      linkData.push({ source: clickedNode.id, target: name });
     }
 
     renderGraph();
@@ -286,5 +266,38 @@ async function expandNode(event, clickedNode) {
       nodeEl.select("image").style("opacity", 1);
       nodeEl.select(".outer-circle").style("stroke", "#aaa");
     }
+  }
+}
+
+
+
+// CreeazÄ un player audio reutilizabil
+const audioPlayer = new Audio();
+audioPlayer.volume = 1.0;
+
+async function playArtistPreview(artistName) {
+  const cacheKey = `preview-${artistName}`;
+  let previewUrl = sessionStorage.getItem(cacheKey);
+
+  if (!previewUrl) {
+    try {
+      const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(artistName)}&limit=10`);
+      const data = await res.json();
+      const tracks = data?.data?.filter(track => track.preview);
+      if (tracks && tracks.length > 0) {
+        const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
+        previewUrl = randomTrack.preview;
+        sessionStorage.setItem(cacheKey, previewUrl);
+      }
+    } catch (err) {
+      console.error("Deezer fetch failed:", err);
+      return;
+    }
+  }
+
+  if (previewUrl) {
+    audioPlayer.pause();
+    audioPlayer.src = previewUrl;
+    audioPlayer.play().catch(e => console.warn("Audio play error:", e));
   }
 }
