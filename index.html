@@ -25,9 +25,14 @@
       font-size: 14px;
       font-weight: bold;
       color: white;
-      opacity: 0.7;
       letter-spacing: 1px;
       z-index: 10;
+      animation: fadeIn 2s ease forwards;
+      opacity: 0;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 0.7; }
     }
 
     #demo-canvas {
@@ -49,6 +54,12 @@
       height: auto;
       margin-bottom: 10px;
       z-index: 2;
+      animation: pulse 4s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.85; }
     }
 
     p {
@@ -70,6 +81,11 @@
       color: #fff;
       text-decoration: none;
       z-index: 2;
+      transition: box-shadow 0.3s ease;
+    }
+
+    a#start-button:hover {
+      box-shadow: 0 0 12px #00cc66;
     }
   </style>
   <script>
@@ -90,24 +106,11 @@
       const lines = [];
 
       function addNode(x, y, parent = null, delay = 0) {
-        nodes.push({
-          x,
-          y,
-          r: 0,
-          maxR: 5,
-          growth: 0.3,
-          delay,
-          frame: 0,
-          parent
-        });
+        nodes.push({ x, y, r: 0, maxR: 5, growth: 0.3, delay, frame: 0, parent });
       }
 
       function addLine(x1, y1, x2, y2, delay = 0) {
-        lines.push({
-          x1, y1, x2, y2,
-          progress: 0,
-          delay
-        });
+        lines.push({ x1, y1, x2, y2, progress: 0, delay });
       }
 
       function resetDemo() {
@@ -118,7 +121,6 @@
         const cx = 160, cy = 80;
         addNode(cx, cy);
 
-        // 1st expansion
         const angles1 = [0, 120, 240];
         angles1.forEach((a, i) => {
           const rad = a * Math.PI / 180;
@@ -128,7 +130,6 @@
           addLine(cx, cy, x, y, 30 + i * 5);
         });
 
-        // 2nd expansion from node[1]
         setTimeout(() => {
           const from = nodes[1];
           const angles2 = [-30, 30];
@@ -141,7 +142,6 @@
           });
         }, 700);
 
-        // 3rd expansion from node[2]
         setTimeout(() => {
           const from = nodes[2];
           const angles3 = [60, 120];
@@ -174,9 +174,7 @@
 
         nodes.forEach(node => {
           if (frame < node.delay) return;
-          if (node.r < node.maxR) {
-            node.r += node.growth;
-          }
+          if (node.r < node.maxR) node.r += node.growth;
           ctx.beginPath();
           ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
           ctx.fill();
@@ -193,6 +191,10 @@
 
       resetDemo();
       draw();
+
+      const btn = document.getElementById("start-button");
+      btn.addEventListener("mouseenter", () => btn.textContent = "Let's go...");
+      btn.addEventListener("mouseleave", () => btn.textContent = "Începe explorarea");
     };
   </script>
 </head>
