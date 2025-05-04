@@ -1,5 +1,6 @@
+// Ripple effect
 function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
-  selection.each(function(d) {
+  selection.each(function() {
     const g = d3.select(this);
     const ripple = g.insert("circle", ":first-child")
       .attr("r", 0)
@@ -15,8 +16,7 @@ function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 6
   });
 }
 
-// ------------ graph.js (Hybrid Last.fm + Spotify) - Full Upgrade FINAL ------------
-
+// Spotify credentials
 const spotifyClientId = '38d179166ca140e498c596340451c1b5';
 const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1';
 const lastFmApiKey = 'fe14d9e2ae87da47a1642aab12b6f52b';
@@ -26,21 +26,16 @@ let spotifyTokenExpiryTime = 0;
 
 async function getSpotifyAccessToken() {
   if (spotifyAccessToken && Date.now() < spotifyTokenExpiryTime) return spotifyAccessToken;
-  const authString = `${spotifyClientId}:${spotifyClientSecret}`;
-  const base64AuthString = btoa(authString);
-
-  const response = await fetch('https://accounts.spotify.com/api/token', {
+  const base64 = btoa(`${spotifyClientId}:${spotifyClientSecret}`);
+  const res = await fetch('https://accounts.spotify.com/api/token', {
     method: 'POST',
     headers: {
-      'Authorization': `Basic ${base64AuthString}`,
+      'Authorization': `Basic ${base64}`,
       'Content-Type': 'application/x-www-form-urlencoded'
     },
     body: 'grant_type=client_credentials'
   });
-
-  if (!response.ok) throw new Error("Spotify auth failed");
-
-  const data = await response.json();
+  const data = await res.json();
   spotifyAccessToken = data.access_token;
   spotifyTokenExpiryTime = Date.now() + (data.expires_in - 60) * 1000;
   return spotifyAccessToken;
@@ -49,23 +44,16 @@ async function getSpotifyAccessToken() {
 async function fetchArtistImage(artistName) {
   try {
     const token = await getSpotifyAccessToken();
-    const searchUrl = `https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`;
-    const response = await fetch(searchUrl, {
+    const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
-    const data = await response.json();
+    const data = await res.json();
     const artist = data?.artists?.items?.[0];
-    if (artist?.images?.length) {
-      return artist.images.find(img => img.height >= 64)?.url || artist.images[0].url;
-    }
-  } catch (e) {
-    console.warn("No image found for:", artistName);
+    return artist?.images?.[0]?.url || "default.jpg";
+  } catch {
+    return "default.jpg";
   }
-  return 'default.jpg';
 }
-
-const spotifyApiBaseUrl = 'https://api.spotify.com/v1';
-const lastFmApiBaseUrl = 'https://ws.audioscrobbler.com/2.0';
 
 const width = window.innerWidth;
 const height = window.innerHeight;
@@ -81,7 +69,7 @@ svg.append("defs").append("clipPath")
 let nodeData = [];
 let linkData = [];
 
-let simulation = d3.forceSimulation(nodeData)
+const simulation = d3.forceSimulation(nodeData)
   .force("link", d3.forceLink(linkData).distance(170).id(d => d.id))
   .force("charge", d3.forceManyBody().strength(-550))
   .force("center", d3.forceCenter(width / 2, height / 2))
@@ -94,39 +82,25 @@ svg.call(zoom);
 let link = container.selectAll("line.link");
 let nodeGroup = container.selectAll("g.node");
 
-const searchInput = document.getElementById('artist-search-input');
-const searchButton = document.getElementById('artist-search-button');
-
-if (searchButton && searchInput) {
-  searchButton.addEventListener('click', handleSearch);
-  searchInput.addEventListener('keypress', e => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleSearch();
-    }
-  });
-}
+document.getElementById("artist-search-button").addEventListener("click", handleSearch);
+document.getElementById("artist-search-input").addEventListener("keypress", e => {
+  if (e.key === 'Enter') handleSearch();
+});
 
 async function handleSearch() {
-  const artistName = searchInput.value.trim();
-  if (!artistName) {
-    alert("Introdu un nume de artist.");
-    return;
-  }
+  const artistName = document.getElementById("artist-search-input").value.trim();
+  if (!artistName) return;
 
   nodeData = [];
   linkData = [];
   simulation.stop();
   container.selectAll("*").remove();
-  link = container.selectAll("line.link");
-  nodeGroup = container.selectAll("g.node");
 
   const imageUrl = await fetchArtistImage(artistName);
-
   nodeData.push({
     id: artistName,
-    x: width / 2 + (Math.random() - 0.5) * 5,
-    y: height / 2 + (Math.random() - 0.5) * 5,
+    x: width / 2 + Math.random() * 5,
+    y: height / 2 + Math.random() * 5,
     imageUrl: imageUrl
   });
 
@@ -138,13 +112,12 @@ async function handleSearch() {
 }
 
 function ticked() {
-  if (link) link
-    .attr("x1", d => d.source.x)
-    .attr("y1", d => d.source.y)
-    .attr("x2", d => d.target.x)
-    .attr("y2", d => d.target.y);
+  link.attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
 
-  if (nodeGroup) nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
+  nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
 }
 
 function renderGraph() {
@@ -166,14 +139,13 @@ function renderGraph() {
       enter => {
         const g = enter.append("g").attr("class", "node");
 
-        g.each(function(d) {
+        g.each(function() {
           rippleEffect(d3.select(this), "#ffffff", 60, 700);
         });
 
-        g.on("mouseover", function(event, d) {
+        g.on("mouseover", function() {
           rippleEffect(d3.select(this), "#ffffff", 60, 700);
         });
-    
 
         g.on("click", (e, d) => {
           e.stopPropagation();
@@ -205,7 +177,23 @@ function renderGraph() {
           .style("fill", "#ffffff")
           .style("pointer-events", "none");
 
-        g.call(drag(simulation));
+        g.call(d3.drag()
+          .on("start", (e, d) => {
+            if (!e.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+            svg.on(".zoom", null);
+          })
+          .on("drag", (e, d) => {
+            d.fx = e.x;
+            d.fy = e.y;
+          })
+          .on("end", (e, d) => {
+            if (!e.active) simulation.alphaTarget(0);
+            svg.call(zoom);
+          })
+        );
+
         g.attr("transform", d => `translate(${d.x},${d.y})`);
 
         return g;
@@ -217,24 +205,6 @@ function renderGraph() {
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
   if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
-}
-
-function drag(sim) {
-  function dragstarted(e, d) {
-    if (!e.active) sim.alphaTarget(0.3).restart();
-    d.fx = d.x;
-    d.fy = d.y;
-    svg.on(".zoom", null);
-  }
-  function dragged(e, d) {
-    d.fx = e.x;
-    d.fy = e.y;
-  }
-  function dragended(e, d) {
-    if (!e.active) sim.alphaTarget(0);
-    svg.call(zoom);
-  }
-  return d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended);
 }
 
 async function expandNode(event, clickedNode) {
@@ -249,30 +219,22 @@ async function expandNode(event, clickedNode) {
   }
 
   try {
-    const lastFmUrl = `https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`;
-    const response = await fetch(lastFmUrl);
-    if (!response.ok) throw new Error("Last.fm fetch failed");
-
-    const data = await response.json();
+    const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`);
+    const data = await res.json();
     const similar = data?.similarartists?.artist ?? [];
-    const names = similar
-      .filter(a => a.name && a.name.toLowerCase() !== artistName.toLowerCase())
-      .slice(0, 6)
-      .map(a => a.name);
+    const names = similar.filter(a => a.name && a.name.toLowerCase() !== artistName.toLowerCase()).slice(0, 6).map(a => a.name);
 
-    const token = await getSpotifyAccessToken();
     const existingIds = new Set(nodeData.map(n => n.id));
     const cx = clickedNode.x ?? width / 2;
     const cy = clickedNode.y ?? height / 2;
     const radius = 130;
 
-    clickedNode.fx = clickedNode.x ?? width / 2;
-    clickedNode.fy = clickedNode.y ?? height / 2;
+    clickedNode.fx = cx;
+    clickedNode.fy = cy;
 
     for (let i = 0; i < names.length; i++) {
       const name = names[i];
       if (existingIds.has(name)) continue;
-
       const imageUrl = await fetchArtistImage(name);
       const angle = (2 * Math.PI / names.length) * i;
       nodeData.push({
@@ -282,7 +244,6 @@ async function expandNode(event, clickedNode) {
         y: cy + radius * Math.sin(angle)
       });
       linkData.push({ source: clickedNode.id, target: name });
-      existingIds.add(name);
     }
 
     renderGraph();
@@ -302,7 +263,3 @@ async function expandNode(event, clickedNode) {
     }
   }
 }
-
-// ------------ FINAL ------------
-
-console.log('READY');
