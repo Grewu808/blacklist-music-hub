@@ -166,6 +166,7 @@ function renderGraph() {
 
         g.on("click", (e, d) => {
           e.stopPropagation();
+          playArtistPreview(d.id);
           expandNode(e, d);
         });
 
