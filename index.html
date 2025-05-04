@@ -2,12 +2,23 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Blacklist Graph</title>
+  <title>Blacklist Music Graph</title>
+  <style>
+    body {
+      margin: 0;
+      background: #111;
+    }
+    svg {
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+  </style>
 </head>
 <body>
   <svg></svg>
 
-  <!-- Asta e ESENȚIALĂ ca să funcționeze `import` din graph.js -->
-  <script type="module" src="./main.js"></script>
+  <!-- Asta încarcă direct graph.js din același folder -->
+  <script type="module" src="./graph.js"></script>
 </body>
 </html>
