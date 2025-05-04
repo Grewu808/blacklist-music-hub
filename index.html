@@ -1,69 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Blacklist Music Hub</title>
-  <link rel="stylesheet" href="style.css"/> <style>
-    /* Stiluri pentru body și container */
-    body {
-        margin: 0; /* Scoatem marginea default */
-        background-color: #000; /* MODIFICAT: Negru complet */
-        color: #ccc; /* Culoare text default deschisă */
-        font-family: sans-serif;
-        display: flex; /* Adăugat pentru centrare verticală simplă a containerului */
-        justify-content: center; /* Centrează containerul orizontal */
-        align-items: center; /* Centrează containerul vertical */
-        min-height: 100vh; /* Asigură înălțime minimă */
-        overflow: hidden; /* Previne scrollbar inutil */
-    }
-    .container {
-        text-align: center; /* Centrează conținutul (logo, text, buton) */
-        padding: 15px;
-    }
-    /* Stil pentru logo */
-    .homepage-logo {
-      display: block;
-      margin-left: auto;
-      margin-right: auto;
-      /* Am scos margin-bottom, spațierea se face de la textul de dedesubt */
-      max-width: 60%; /* Limitează lățimea logo-ului */
-      height: auto; /* Păstrează proporțiile */
-    }
-    /* ADAUGAT: Stil pentru textul "MUSIC HUB" */
-    .subtitle-text {
-        color: #aaa; /* O nuanță de gri */
-        font-size: 1.5em; /* Mărime text - ajustează după preferințe */
-        margin-top: 15px; /* Spațiu între logo și acest text */
-        margin-bottom: 30px; /* Spațiu între text și buton */
-        font-weight: bold; /* Optional */
-        letter-spacing: 1px; /* Optional */
-        text-transform: uppercase; /* Optional: Majuscule */
-    }
-    /* Stilizare buton - păstrăm gri */
-    .start-button {
-        padding: 15px 30px;
-        font-size: 1.2em;
-        font-weight: bold;
-        color: #eee; /* Text deschis pe buton gri */
-        background-color: #333; /* Fundal gri pentru buton */
-        border: 1px solid #555;
-        border-radius: 5px;
-        cursor: pointer;
-        transition: background-color 0.3s;
-    }
-    .start-button:hover {
-        background-color: #444;
-    }
+  <meta charset="UTF-8">
+  <title>Music Graph</title>
+  <style>
+    body { margin: 0; background: #111; }
+    svg { width: 100vw; height: 100vh; display: block; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <img src="logo.png" alt="Blacklist Music Hub Logo" class="homepage-logo">
+  <svg></svg>
 
-    <div class="subtitle-text">MUSIC HUB</div>
+  <!-- D3.js CDN -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
 
-    <button onclick="location.href='map.html'" class="start-button">Incepe explorarea</button>
-  </div>
-  </body>
+  <!-- API și Graph -->
+  <script src="api.js"></script>
+  <script src="graph.js"></script>
+
+  <!-- Căutare inițială -->
+  <script>
+    searchArtist("Nas"); // sau alt artist
+  </script>
+</body>
 </html>
