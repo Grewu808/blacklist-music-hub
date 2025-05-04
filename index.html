@@ -16,12 +16,57 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
+      overflow: hidden;
+    }
+
+    #demo-container {
+      position: absolute;
+      top: 30px;
+      width: 300px;
+      height: 160px;
+      opacity: 0.15;
+      pointer-events: none;
+    }
+
+    #demo-text {
+      position: absolute;
+      top: 10px;
+      font-size: 14px;
+      font-weight: bold;
+      color: white;
+      opacity: 0.7;
+      letter-spacing: 1px;
+      z-index: 10;
+    }
+
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+
+    .node {
+      fill: white;
+      r: 6;
+      transition: transform 0.3s ease;
+    }
+
+    .node.expand {
+      transform: scale(1.8);
+    }
+
+    .cursor {
+      fill: none;
+      stroke: white;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
     }
 
     img {
       width: 240px;
       height: auto;
       margin-bottom: 10px;
+      z-index: 2;
     }
 
     p {
@@ -31,6 +76,7 @@
       letter-spacing: 2px;
       margin-top: -10px;
       margin-bottom: 30px;
+      z-index: 2;
     }
 
     a#start-button {
@@ -41,16 +87,78 @@
       border-radius: 6px;
       color: #fff;
       text-decoration: none;
+      z-index: 2;
     }
   </style>
   <script>
-    // Elimină toți parametrii din URL la accesare
     if (window.location.search) {
       window.history.replaceState({}, document.title, window.location.pathname);
     }
+
+    window.onload = () => {
+      const svg = document.getElementById("demo-svg");
+      const centerX = 150;
+      const centerY = 80;
+      const radius = 40;
+
+      function clearNodes() {
+        while (svg.firstChild) {
+          svg.removeChild(svg.firstChild);
+        }
+      }
+
+      function drawDemo(step = 0) {
+        clearNodes();
+
+        // nod central
+        const center = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        center.setAttribute("class", "node");
+        center.setAttribute("cx", centerX);
+        center.setAttribute("cy", centerY);
+        center.setAttribute("r", 6);
+        svg.appendChild(center);
+
+        // cursor (simulat ca o mână)
+        const cursor = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        cursor.setAttribute("class", "cursor");
+        cursor.setAttribute("d", "M140 60 L145 70 L150 60");
+        svg.appendChild(cursor);
+
+        // animăm cursorul + nodurile după delay
+        setTimeout(() => {
+          // extindere noduri
+          const angles = [0, 120, 240];
+          angles.forEach((angle) => {
+            const rad = (angle * Math.PI) / 180;
+            const x = centerX + radius * Math.cos(rad);
+            const y = centerY + radius * Math.sin(rad);
+
+            const node = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            node.setAttribute("class", "node");
+            node.setAttribute("cx", x);
+            node.setAttribute("cy", y);
+            node.setAttribute("r", 4);
+            svg.appendChild(node);
+          });
+
+          center.classList.add("expand");
+
+          setTimeout(() => {
+            drawDemo((step + 1) % 2); // repetă demo-ul
+          }, 2000);
+        }, 800);
+      }
+
+      drawDemo();
+    };
   </script>
 </head>
 <body>
+  <div id="demo-text">Start exploring music your way</div>
+  <div id="demo-container">
+    <svg id="demo-svg"></svg>
+  </div>
+
   <img src="logo.png" alt="Blacklist Logo" />
   <p>MUSIC HUB</p>
   <a id="start-button" href="map.html">Începe explorarea</a>
