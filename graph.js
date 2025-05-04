@@ -160,19 +160,52 @@ function renderGraph() {
         });
 
         
-g.on("mouseover", function(e, d) {
+g.on("mouseover", function(event, d) {
   rippleEffect(d3.select(this), "#ffffff", 60, 700);
   playArtistPreview(d.id);
-  if (window.innerWidth > 768) {
-    hoverTimeout = setTimeout(() => {
-      showArtistTooltip(e, d);
-    }, 600);
-  }
+  hoverTimeout = setTimeout(() => {
+    showArtistTooltip(event, d);
+  }, 600);
 });
 
-g.on("mouseout", () => {
+g.on("mouseout", function() {
   clearTimeout(hoverTimeout);
   hideArtistTooltip();
+});
+
+// LONG PRESS on touch devices
+g.on("touchstart", function(event, d) {
+  if (event.touches.length > 1) return;
+  const touch = event.touches[0];
+  const target = d3.select(this);
+
+  const [x, y] = d3.pointer(touch, document.body);
+
+  holdCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  holdCircle.setAttribute("cx", x);
+  holdCircle.setAttribute("cy", y);
+  holdCircle.setAttribute("r", "0");
+  holdCircle.setAttribute("stroke", "#00ff88");
+  holdCircle.setAttribute("stroke-width", "3");
+  holdCircle.setAttribute("fill", "none");
+  holdCircle.setAttribute("id", "hold-progress");
+  document.querySelector("svg").appendChild(holdCircle);
+
+  let radius = 0;
+  touchTimer = setInterval(() => {
+    radius += 2;
+    holdCircle.setAttribute("r", radius);
+    if (radius >= 28) {
+      clearInterval(touchTimer);
+      showArtistTooltip(event, d);
+    }
+  }, 50);
+});
+
+g.on("touchend", function() {
+  clearInterval(touchTimer);
+  const existing = document.getElementById("hold-progress");
+  if (existing) existing.remove();
 });
 
 
@@ -346,6 +379,8 @@ document.body.addEventListener("click", (e) => {
 
 
 let hoverTimeout;
+let touchTimer;
+let holdCircle;
 
 function showArtistTooltip(event, d) {
   hideArtistTooltip();
@@ -353,8 +388,8 @@ function showArtistTooltip(event, d) {
   const tooltip = document.createElement("div");
   tooltip.id = "artist-tooltip";
   tooltip.style.position = "absolute";
-  tooltip.style.left = event.pageX + 15 + "px";
-  tooltip.style.top = event.pageY - 30 + "px";
+  tooltip.style.left = (event.pageX || event.touches?.[0]?.pageX || 0) + 15 + "px";
+  tooltip.style.top = (event.pageY || event.touches?.[0]?.pageY || 0) - 30 + "px";
   tooltip.style.background = "#111";
   tooltip.style.color = "#fff";
   tooltip.style.padding = "10px";
