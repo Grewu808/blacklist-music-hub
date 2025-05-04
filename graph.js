@@ -166,7 +166,6 @@ function renderGraph() {
 
         g.on("click", (e, d) => {
           e.stopPropagation();
-          playArtistPreview(d.id);
           expandNode(e, d);
         });
 
@@ -292,7 +291,7 @@ async function expandNode(event, clickedNode) {
 }
 
 
-// Preview audio player
+// Preview audio player using iTunes API
 const audioPlayer = new Audio();
 audioPlayer.volume = 1.0;
 
@@ -302,16 +301,16 @@ async function playArtistPreview(artistName) {
 
   if (!previewUrl) {
     try {
-      const res = await fetch(`https://api.deezer.com/search?q=${encodeURIComponent(artistName)}&limit=10`);
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&media=music&limit=10`);
       const data = await res.json();
-      const tracks = data?.data?.filter(track => track.preview);
+      const tracks = data?.results?.filter(track => track.previewUrl);
       if (tracks && tracks.length > 0) {
         const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
-        previewUrl = randomTrack.preview;
+        previewUrl = randomTrack.previewUrl;
         sessionStorage.setItem(cacheKey, previewUrl);
       }
     } catch (err) {
-      console.error("Deezer fetch failed:", err);
+      console.error("iTunes fetch failed:", err);
       return;
     }
   }
