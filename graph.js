@@ -180,8 +180,8 @@ function renderGraph() {
         g.call(d3.drag()
           .on("start", (e, d) => {
             if (!e.active) simulation.alphaTarget(0.3).restart();
-            d.fx = e.x;
-            d.fy = e.y;
+            d.fx = d.x;
+            d.fy = d.y;
             svg.on(".zoom", null);
           })
           .on("drag", (e, d) => {
@@ -207,6 +207,7 @@ function renderGraph() {
   if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
 }
 
+
 async function expandNode(event, clickedNode) {
   const artistName = clickedNode.id;
   if (!artistName) return;
@@ -222,10 +223,7 @@ async function expandNode(event, clickedNode) {
     const res = await fetch(`https://ws.audioscrobbler.com/2.0/?method=artist.getsimilar&artist=${encodeURIComponent(artistName)}&api_key=${lastFmApiKey}&limit=6&format=json`);
     const data = await res.json();
     const similar = data?.similarartists?.artist ?? [];
-    const names = similar
-      .filter(a => a.name && a.name.toLowerCase() !== artistName.toLowerCase())
-      .slice(0, 6)
-      .map(a => a.name);
+    const names = similar.filter(a => a.name && a.name.toLowerCase() !== artistName.toLowerCase()).slice(0, 6).map(a => a.name);
 
     const existingIds = new Set(nodeData.map(n => n.id));
     const existingLinks = new Set(linkData.map(d => `${d.source}-${d.target}`));
