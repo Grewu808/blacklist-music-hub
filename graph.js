@@ -1,5 +1,3 @@
-import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
-
 const API_KEY = "fe14d9e2ae87da47a1642aab12b6f52b";
 
 async function fetchSimilarArtists(artistName) {
@@ -115,8 +113,13 @@ async function handleClick(event, d) {
   updateGraph();
 }
 
-(async function start() {
-  const name = "Nas";
+async function searchArtist(name) {
+  nodes = [];
+  links = [];
+  nodeById.clear();
+  linkById.clear();
+  svg.selectAll("*").remove();
+
   const image = await fetchArtistImage(name);
   const root = { id: name, image };
   addNode(root);
@@ -130,4 +133,7 @@ async function handleClick(event, d) {
   }
 
   updateGraph();
-})();
+}
+
+// LANSARE DIRECTĂ
+searchArtist("Nas");
