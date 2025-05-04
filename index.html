@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <title>Blacklist Music Graph</title>
   <style>
     body {
@@ -18,7 +18,8 @@
 <body>
   <svg></svg>
 
-  <!-- Asta încarcă direct graph.js din același folder -->
-  <script type="module" src="./graph.js"></script>
+  <!-- D3 global (fără import) -->
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="graph.js"></script>
 </body>
 </html>
