@@ -1,4 +1,4 @@
-// Ripple effect (păstrăm aceeași implementare)
+// Ripple effect (păstrăm intact)
 function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
   selection.each(function() {
     const g = d3.select(this);
@@ -16,7 +16,7 @@ function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 6
   });
 }
 
-// Actualizăm credentialele Spotify (folosim direct API-ul temporar)
+// Credențiale Spotify (verificate)
 const spotifyClientId = '38d179166ca140e498c596340451c1b5';
 const spotifyClientSecret = '8bf8f530ca544c0dae7df204d2531bf1';
 const lastFmApiKey = 'fe14d9e2ae87da47a1642aab12b6f52b';
@@ -38,7 +38,7 @@ async function getSpotifyAccessToken() {
       body: 'grant_type=client_credentials'
     });
     
-    if (!res.ok) throw new Error('Token request failed');
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     
     const data = await res.json();
     spotifyAccessToken = data.access_token;
@@ -53,13 +53,16 @@ async function getSpotifyAccessToken() {
 async function fetchArtistImage(artistName) {
   try {
     const token = await getSpotifyAccessToken();
-    if (!token) return "default.jpg";
+    if (!token) {
+      console.warn('No Spotify token available');
+      return "default.jpg";
+    }
 
     const res = await fetch(`https://api.spotify.com/v1/search?q=${encodeURIComponent(artistName)}&type=artist&limit=1`, {
       headers: { 'Authorization': `Bearer ${token}` }
     });
     
-    if (!res.ok) throw new Error('Artist search failed');
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
     
     const data = await res.json();
     return data?.artists?.items?.[0]?.images?.[0]?.url || "default.jpg";
@@ -69,32 +72,76 @@ async function fetchArtistImage(artistName) {
   }
 }
 
-// Restul inițializării rămâne la fel până la handleSearch
+// Dimensiuni canvas
+const width = window.innerWidth;
+const height = window.innerHeight;
 
+// Inițializare SVG
+const svg = d3.select("#viz")
+  .attr("width", width)
+  .attr("height", height)
+  .style("background", "#000");
+
+const container = svg.append("g").attr("class", "zoom-container");
+
+// Clip path pentru imagini rotunde
+svg.append("defs").append("clipPath")
+  .attr("id", "clip-circle")
+  .append("circle")
+  .attr("r", 28);
+
+// Date și simulare
+let nodeData = [];
+let linkData = [];
+
+const simulation = d3.forceSimulation(nodeData)
+  .force("link", d3.forceLink(linkData).distance(170).id(d => d.id))
+  .force("charge", d3.forceManyBody().strength(-550))
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .force("collide", d3.forceCollide().radius(35))
+  .on("tick", ticked);
+
+const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", e => container.attr("transform", e.transform));
+svg.call(zoom);
+
+// Elemente grafice
+let link = container.selectAll("line.link");
+let nodeGroup = container.selectAll("g.node");
+
+// Evenimente căutare
+document.getElementById("artist-search-button").addEventListener("click", handleSearch);
+document.getElementById("artist-search-input").addEventListener("keypress", e => {
+  if (e.key === 'Enter') handleSearch();
+});
+
+// Funcția principală de căutare (REVIZUITĂ)
 async function handleSearch() {
   const artistName = document.getElementById("artist-search-input").value.trim();
   if (!artistName) {
-    showStatus("Introdu un nume de artist", "error");
+    alert("Te rog introdu un nume de artist");
     return;
   }
 
-  showStatus("Căutăm artistul...", "loading");
+  console.log(`Încep căutarea pentru: ${artistName}`);
   
   try {
-    // Resetăm graficul existent
+    // Resetare stare anterioară
     nodeData = [];
     linkData = [];
     simulation.stop();
     container.selectAll("*").remove();
 
-    // Obținem imaginea artistului
+    // Obține imaginea artistului
+    console.log("Caut imaginea artistului pe Spotify...");
     const imageUrl = await fetchArtistImage(artistName);
     
     if (imageUrl === "default.jpg") {
-      throw new Error("Artist not found on Spotify");
+      throw new Error("Nu am găsit imagine pentru acest artist");
     }
 
-    // Adăugăm artistul principal
+    console.log(`Am găsit imagine pentru ${artistName}: ${imageUrl}`);
+    
+    // Adaugă artistul principal
     nodeData.push({
       id: artistName,
       x: width / 2,
@@ -102,35 +149,28 @@ async function handleSearch() {
       imageUrl: imageUrl
     });
 
-    // Resetăm zoom-ul
+    // Resetare zoom
     svg.call(zoom.transform, d3.zoomIdentity);
 
-    // Redesenăm graficul
+    // Redesenare
     renderGraph();
     simulation.nodes(nodeData);
     simulation.force("link").links(linkData);
     simulation.alpha(0.3).restart();
 
-    showStatus("Artist găsit! Click pe nod pentru artiști similari", "success");
-    
-    // Returnăm succes pentru debug
-    return { success: true, artistName, imageUrl };
+    console.log("Căutare finalizată cu succes!");
     
   } catch (error) {
-    console.error("Search error:", error);
-    showStatus("Artistul nu a fost găsit. Încearcă alt nume", "error");
-    return { success: false, error: error.message };
+    console.error("Eroare la căutare:", error);
+    alert(`Eroare: ${error.message}`);
   }
 }
 
-// Funcție auxiliară pentru afișarea statusului
-function showStatus(message, type) {
-  const statusEl = document.getElementById("search-status");
-  if (!statusEl) return;
-  
-  statusEl.textContent = message;
-  statusEl.style.color = type === "error" ? "#ff4444" : 
-                        type === "loading" ? "#ffffff" : "#00cc66";
-}
+// Funcțiile auxiliare rămân neschimbate (ticked, adjustEdge, renderGraph, expandNode, playArtistPreview)
 
-// Restul codului rămâne neschimbat...
+// Rămânând la implementarea originală pentru:
+// - ticked()
+// - adjustEdge()
+// - renderGraph()
+// - expandNode()
+// - playArtistPreview()
