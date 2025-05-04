@@ -187,7 +187,6 @@ function renderGraph() {
           .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
 
         g.append("text")
-        // Play button pe nod
         g.append("circle")
           .attr("class", "play-button")
           .attr("r", 6)
@@ -312,20 +311,27 @@ const audioPlayer = new Audio();
 audioPlayer.volume = 1.0;
 
 async function playArtistPreview(artistName) {
+  let previewUrl;
   try {
-    const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&media=music&limit=10`);
-    const data = await res.json();
-    const tracks = data?.results?.filter(track => track.previewUrl);
-    if (tracks && tracks.length > 0) {
-      const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
-      const previewUrl = randomTrack.previewUrl;
-
-      audioPlayer.pause();
-      audioPlayer.src = previewUrl;
-      audioPlayer.play().catch(e => console.warn("Audio play error:", e));
+    try {
+      const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&media=music&limit=10`);
+      const data = await res.json();
+      const tracks = data?.results?.filter(track => track.previewUrl);
+      if (tracks && tracks.length > 0) {
+        const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
+        previewUrl = randomTrack.previewUrl;
+        
+      }
+    } catch (err) {
+      console.error("iTunes fetch failed:", err);
+      return;
     }
-  } catch (err) {
-    console.error("iTunes fetch failed:", err);
+  }
+
+  if (previewUrl) {
+    audioPlayer.pause();
+    audioPlayer.src = previewUrl;
+    audioPlayer.play().catch(e => console.warn("Audio play error:", e));
   }
 }
 
@@ -334,6 +340,5 @@ document.body.addEventListener("click", (e) => {
   const isNode = e.target.closest(".node");
   if (!isNode) {
     audioPlayer.pause();
-    d3.selectAll(".play-button").remove();
   }
 }, true);
