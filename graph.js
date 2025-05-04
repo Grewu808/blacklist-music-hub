@@ -187,20 +187,6 @@ function renderGraph() {
           .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
 
         g.append("text")
-        g.append("circle")
-          .attr("class", "play-button")
-          .attr("r", 6)
-          .attr("cx", 20)
-          .attr("cy", -20)
-          .style("fill", "#00ff00")
-          .style("stroke", "#fff")
-          .style("stroke-width", "1px")
-          .style("cursor", "pointer")
-          .on("click", (e, d) => {
-            e.stopPropagation();
-            playArtistPreview(d.id);
-          });
-
           .text(d => d.id)
           .attr("text-anchor", "middle")
           .attr("dy", 42)
@@ -311,8 +297,10 @@ const audioPlayer = new Audio();
 audioPlayer.volume = 1.0;
 
 async function playArtistPreview(artistName) {
-  let previewUrl;
-  try {
+  const cacheKey = `preview-${artistName}`;
+  let previewUrl = sessionStorage.getItem(cacheKey);
+
+  if (!previewUrl) {
     try {
       const res = await fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(artistName)}&media=music&limit=10`);
       const data = await res.json();
@@ -320,7 +308,7 @@ async function playArtistPreview(artistName) {
       if (tracks && tracks.length > 0) {
         const randomTrack = tracks[Math.floor(Math.random() * tracks.length)];
         previewUrl = randomTrack.previewUrl;
-        
+        sessionStorage.setItem(cacheKey, previewUrl);
       }
     } catch (err) {
       console.error("iTunes fetch failed:", err);
