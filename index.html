@@ -2,6 +2,7 @@
 <html lang="ro">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Blacklist Music Graph</title>
   <style>
     body {
@@ -10,25 +11,38 @@
       font-family: Arial, sans-serif;
       color: #fff;
     }
+
     #controls {
       position: absolute;
       top: 20px;
-      left: 20px;
-      background: rgba(0,0,0,0.7);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
       padding: 10px 15px;
       border-radius: 8px;
       z-index: 10;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
     }
+
     #controls label {
       font-weight: bold;
       margin-right: 10px;
+      white-space: nowrap;
     }
+
     #artist-search-input {
       padding: 6px 10px;
       border-radius: 4px;
       border: none;
       font-size: 14px;
+      width: 160px;
+      max-width: 70vw;
+      margin-top: 5px;
     }
+
     #artist-search-button {
       padding: 6px 12px;
       margin-left: 5px;
@@ -38,7 +52,9 @@
       color: white;
       cursor: pointer;
       font-weight: bold;
+      margin-top: 5px;
     }
+
     svg {
       width: 100vw;
       height: 100vh;
