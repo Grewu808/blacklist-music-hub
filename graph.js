@@ -159,10 +159,22 @@ function renderGraph() {
           rippleEffect(d3.select(this), "#ffffff", 60, 700);
         });
 
-        g.on("mouseover", function() {
-          rippleEffect(d3.select(this), "#ffffff", 60, 700);
         
-          playArtistPreview(d.id);});
+g.on("mouseover", function(e, d) {
+  rippleEffect(d3.select(this), "#ffffff", 60, 700);
+  playArtistPreview(d.id);
+  if (window.innerWidth > 768) {
+    hoverTimeout = setTimeout(() => {
+      showArtistTooltip(e, d);
+    }, 600);
+  }
+});
+
+g.on("mouseout", () => {
+  clearTimeout(hoverTimeout);
+  hideArtistTooltip();
+});
+
 
         g.on("click", (e, d) => {
           e.stopPropagation();
@@ -330,3 +342,52 @@ document.body.addEventListener("click", (e) => {
     audioPlayer.pause();
   }
 }, true);
+
+
+
+let hoverTimeout;
+
+function showArtistTooltip(event, d) {
+  hideArtistTooltip();
+
+  const tooltip = document.createElement("div");
+  tooltip.id = "artist-tooltip";
+  tooltip.style.position = "absolute";
+  tooltip.style.left = event.pageX + 15 + "px";
+  tooltip.style.top = event.pageY - 30 + "px";
+  tooltip.style.background = "#111";
+  tooltip.style.color = "#fff";
+  tooltip.style.padding = "10px";
+  tooltip.style.borderRadius = "8px";
+  tooltip.style.boxShadow = "0 4px 10px rgba(0,0,0,0.5)";
+  tooltip.style.zIndex = "9999";
+  tooltip.style.maxWidth = "250px";
+  tooltip.style.fontSize = "14px";
+
+  tooltip.innerHTML = `
+    <div style="font-weight: bold; font-size: 16px; margin-bottom: 5px;">${d.id}</div>
+    <div id="tooltip-bio">CÄutÄm informaÈii...</div>
+    <button onclick="openFullArtistPage('${d.id}')" style="margin-top: 8px; padding: 5px 10px; font-size: 13px;">Vezi mai mult</button>
+  `;
+
+  document.body.appendChild(tooltip);
+
+  fetch(\`https://ws.audioscrobbler.com/2.0/?method=artist.getinfo&artist=\${encodeURIComponent(d.id)}&api_key=\${lastFmApiKey}&format=json\`)
+    .then(res => res.json())
+    .then(data => {
+      const bio = data?.artist?.bio?.summary || "FÄrÄ descriere.";
+      document.getElementById("tooltip-bio").innerHTML = bio.split("<a")[0].trim();
+    })
+    .catch(() => {
+      document.getElementById("tooltip-bio").innerHTML = "InformaÈii indisponibile.";
+    });
+}
+
+function hideArtistTooltip() {
+  const existing = document.getElementById("artist-tooltip");
+  if (existing) existing.remove();
+}
+
+function openFullArtistPage(artistName) {
+  alert("Pagina completÄ pentru: " + artistName);
+}
