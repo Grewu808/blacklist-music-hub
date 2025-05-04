@@ -228,6 +228,7 @@ function renderGraph() {
 
 async function expandNode(event, clickedNode) {
   const artistName = clickedNode.id;
+  saveContextArtist(artistName); // <-- AdÄugat pentru One Way Radio
   if (!artistName) return;
 
   const nodeEl = event.currentTarget ? d3.select(event.currentTarget) : null;
