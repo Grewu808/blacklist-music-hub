@@ -52,12 +52,16 @@
       left: 50%;
       transform: translate(-50%, -50%);
       /* Centrare perfectă */
+      width: 100%;
+      /* Ocupă toată lățimea */
     }
 
     .hub-buttons-container {
       display: flex;
       justify-content: center;
       align-items: center;
+      margin-top: 10px;
+      /* Spațiu sub logo */
     }
 
     .hub-button {
@@ -82,13 +86,17 @@
       width: 320px;
       height: 160px;
       opacity: 0.2;
-      margin-top: 10px;
+      /* margin-top: 10px; */
+      /* Eliminat */
+      margin-bottom: 10px;
+      /* Spațiu sub animație */
     }
 
     #movie-demo-container {
       width: 320px;
       height: 160px;
       margin-top: 10px;
+      /* Spațiu sub butoane */
     }
 
     #movie-demo {
@@ -99,7 +107,7 @@
     img {
       width: 240px;
       height: auto;
-      margin-bottom: 30px;
+      margin-bottom: 10px;
       /* Spațiu sub logo */
       /* margin-top: -50px; */
       /* Eliminat */
@@ -270,14 +278,14 @@
 <body>
   <div id="hero-text">START EXPLORING YOUR WAY</div>
 
-  <img src="logo.png" alt="Blacklist Logo" />
-
   <div class="hub-container">
+    <canvas id="music-demo-canvas" width="320" height="160"></canvas>
+    <img src="logo.png" alt="Blacklist Logo" />
     <div class="hub-buttons-container">
       <a href="map.html" class="hub-button">MUSIC HUB</a>
       <a href="#" class="hub-button">MOVIE HUB</a>
     </div>
-    <canvas id="music-demo-canvas" width="320" height="160"></canvas>
+
     <div id="movie-demo-container">
       <div id="movie-demo">
         </div>
