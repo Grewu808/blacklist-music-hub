@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html lang="ro">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blacklist Hub</title>
+  <title>Blacklist Music Hub - Hartă</title>
   <style>
     body {
       margin: 0;
@@ -28,54 +27,29 @@
       text-align: center;
     }
 
-    .hub-switch-container {
-      /* Container pentru switch-ul Actor/Film */
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .hub-switch-button {
-      /* Stil pentru butoanele Actor și Film */
-      padding: 8px 16px;
-      border-radius: 6px;
-      border: none;
-      background-color: #333;
-      color: #aaa;
-      cursor: pointer;
+    #controls label {
       font-weight: bold;
-      font-size: 15px;
-      transition: background-color 0.3s ease, color 0.3s ease;
+      margin-bottom: 5px;
+      font-size: 16px;
     }
 
-    .hub-switch-button.active {
-      /* Stil pentru butonul activ */
-      background-color: #00cc66;
-      color: #fff;
-    }
-
-    #search-container {
-      /* Container pentru input și butonul de căutare */
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 10px;
-    }
-
-    #search-input {
-      /* Stil pentru input */
+    #artist-search-input {
       padding: 8px 12px;
       border-radius: 6px;
       border: none;
       font-size: 16px;
       width: 220px;
       max-width: 80vw;
+      margin-bottom: 8px;
       text-align: center;
     }
 
-    #search-button {
-      /* Stil pentru butonul de căutare */
+    #artist-buttons {
+      display: flex;
+      gap: 10px;
+    }
+
+    #artist-search-button {
       padding: 8px 14px;
       border-radius: 6px;
       border: none;
@@ -84,15 +58,9 @@
       cursor: pointer;
       font-weight: bold;
       font-size: 15px;
-      transition: box-shadow 0.3s ease;
-    }
-
-    #search-button:hover {
-      box-shadow: 0 0 10px #00cc66;
     }
 
     #oneway-btn {
-      /* Stil pentru One Way Radio */
       padding: 8px 14px;
       border-radius: 6px;
       border: none;
@@ -110,20 +78,14 @@
     }
   </style>
 </head>
-
 <body>
   <div id="controls">
-    <div class="hub-switch-container">
-      <button class="hub-switch-button active" data-hub="artist">Actor</button>
-      <button class="hub-switch-button" data-hub="movie">Film</button>
+    <label for="artist-search-input">Artist Favorit:</label>
+    <input id="artist-search-input" type="text" placeholder="ex: Eminem" />
+    <div id="artist-buttons">
+      <button id="artist-search-button">Caută</button>
+      <button id="oneway-btn">One Way Radio</button>
     </div>
-
-    <div id="search-container">
-      <input id="search-input" type="text" placeholder="Caută" />
-      <button id="search-button">Caută</button>
-    </div>
-
-    <button id="oneway-btn">One Way Radio</button>
   </div>
 
   <svg id="viz"></svg>
@@ -132,79 +94,103 @@
   <script src="graph.js"></script>
 
   <script>
-    const artistSearchInput = document.getElementById("search-input");
-    const artistSearchButton = document.getElementById("search-button");
-    const movieSearchInput = document.getElementById("search-input");
-    const movieSearchButton = document.getElementById("search-button");
-    const onewayBtn = document.getElementById("oneway-btn");
-    const hubSwitchButtons = document.querySelectorAll(".hub-switch-button");
-    let currentHub = "artist";
+    const radioContextKey = "oneway_context";
+    const radioPlayedKey = "oneway_played";
+    let currentTrackIndex = 0;
+    let playlist = [];
+    let audio = new Audio();
 
-    // Funcție pentru a comuta între hub-uri
-    function switchHub(hub) {
-      currentHub = hub;
-      hubSwitchButtons.forEach(button => button.classList.remove("active"));
-      document.querySelector(`.hub-switch-button[data-hub="${hub}"]`).classList.add("active");
+    function getContextArtists() {
+      const raw = localStorage.getItem(radioContextKey);
+      if (!raw) return ["Nas", "J Dilla", "MF DOOM"];
+      return JSON.parse(raw);
+    }
 
-      // Resetează inputul și graficul
-      search-input.value = "";
-      // Resetează graficul aici (apelează o funcție din graph.js)
-      resetGraph();
-
-      // Afișează/ascunde elemente specifice
-      if (hub === "artist") {
-        search-input.placeholder = "Caută Actor";
-        onewayBtn.style.display = "block";
-      } else if (hub === "movie") {
-        search-input.placeholder = "Caută Film";
-        onewayBtn.style.display = "none";
+    function saveContextArtist(artistName) {
+      let list = getContextArtists();
+      if (!list.includes(artistName)) {
+        list.push(artistName);
+        if (list.length > 5) list.shift();
+        localStorage.setItem(radioContextKey, JSON.stringify(list));
       }
     }
 
-    // Event listeners pentru butoanele de comutare
-    hubSwitchButtons.forEach(button => {
-      button.addEventListener("click", () => {
-        const hub = button.getAttribute("data-hub");
-        switchHub(hub);
-      });
-    });
+    function getPlayedTracks() {
+      const raw = localStorage.getItem(radioPlayedKey);
+      return raw ? JSON.parse(raw) : [];
+    }
 
-    // Event listener pentru căutare
-    search-button.addEventListener("click", () => {
-      const searchTerm = search-input.value.trim();
-      if (searchTerm) {
-        if (currentHub === "artist") {
-          handleArtistSearch(searchTerm); // Funcție din graph.js
-        } else if (currentHub === "movie") {
-          handleMovieSearch(searchTerm); // Funcție din graph.js
-        }
+    function markTrackPlayed(trackId) {
+      const list = getPlayedTracks();
+      list.push(trackId);
+      localStorage.setItem(radioPlayedKey, JSON.stringify(list));
+    }
+
+    function fetchTracksForContext(callback) {
+      const artists = getContextArtists();
+      const query = artists[Math.floor(Math.random() * artists.length)];
+      fetch(`https://itunes.apple.com/search?term=${encodeURIComponent(query)}&media=music&limit=25`)
+        .then(res => res.json())
+        .then(data => {
+          const played = getPlayedTracks();
+          const filtered = data.results.filter(track => track.previewUrl && !played.includes(track.trackId));
+          callback(filtered);
+        });
+    }
+
+    function showRadioUI(track) {
+      let wrapper = document.getElementById("radio-wrapper");
+      if (!wrapper) {
+        wrapper = document.createElement("div");
+        wrapper.id = "radio-wrapper";
+        wrapper.style = "position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#111;padding:20px;border-radius:8px;color:#fff;z-index:9999;text-align:center;width:260px;";
+        wrapper.innerHTML = `
+          <div id="radio-cover" style="margin-bottom:10px;"></div>
+          <div id="radio-title" style="font-weight:bold;font-size:14px;margin-bottom:4px;"></div>
+          <div id="radio-artist" style="font-size:13px;color:#aaa;margin-bottom:10px;"></div>
+          <div>
+            <button id="radio-play">Play</button>
+            <button id="radio-pause">Pause</button>
+            <button id="radio-next">Next</button>
+          </div>
+        `;
+        document.body.appendChild(wrapper);
+
+        document.getElementById("radio-play").onclick = () => audio.play();
+        document.getElementById("radio-pause").onclick = () => audio.pause();
+        document.getElementById("radio-next").onclick = () => playNextTrack();
       }
-    });
 
-    // Event listener pentru apăsarea Enter
-    search-input.addEventListener("keypress", (event) => {
-      if (event.key === "Enter") {
-        search-button.click();
+      document.getElementById("radio-cover").innerHTML = `<img src="${track.artworkUrl100}" style="width:100px;border-radius:4px;" />`;
+      document.getElementById("radio-title").textContent = track.trackName;
+      document.getElementById("radio-artist").textContent = track.artistName;
+
+      audio.src = track.previewUrl;
+      audio.play();
+
+      markTrackPlayed(track.trackId);
+    }
+
+    function playNextTrack() {
+      if (playlist.length === 0) {
+        fetchTracksForContext(tracks => {
+          playlist = tracks;
+          if (playlist.length > 0) {
+            showRadioUI(playlist[0]);
+            playlist.shift();
+          } else {
+            alert("No more tracks found for your journey.");
+          }
+        });
+      } else {
+        showRadioUI(playlist[0]);
+        playlist.shift();
       }
+    }
+
+    document.getElementById("oneway-btn").addEventListener("click", () => {
+      playNextTrack();
     });
-
-    // Funcții placeholder (vor fi definite în graph.js)
-    function handleArtistSearch(searchTerm) {
-      console.log("Căutare actor:", searchTerm);
-      // Apel către funcția din graph.js pentru căutarea actorilor
-    }
-
-    function handleMovieSearch(searchTerm) {
-      console.log("Căutare film:", searchTerm);
-      // Apel către funcția din graph.js pentru căutarea filmelor
-    }
-
-    // Funcție placeholder pentru resetarea graficului (va fi definită în graph.js)
-    function resetGraph() {
-      console.log("Resetează graficul");
-      // Apel către funcția din graph.js pentru resetarea graficului
-    }
   </script>
 </body>
-
 </html>
