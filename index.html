@@ -98,7 +98,6 @@
       width: 240px;
       height: auto;
       transform: scale(1.07);
-      /* Mărit cu 7% */
       margin-bottom: 10px;
       z-index: 2;
       animation: pulse 4s ease-in-out infinite;
@@ -138,18 +137,18 @@
     }
 
     window.onload = () => {
-      const musicCanvas = document.getElementById('music-demo-canvas');
-      const musicCtx = musicCanvas.getContext('2d');
+      const canvas = document.getElementById('music-demo-canvas');
+      const ctx = canvas.getContext('2d');
       const scale = window.devicePixelRatio || 1;
-      musicCanvas.width = 320 * scale;
-      musicCanvas.height = 160 * scale;
-      musicCtx.scale(scale, scale);
+      canvas.width = 320 * scale;
+      canvas.height = 160 * scale;
+      ctx.scale(scale, scale);
 
-      let musicFrame = 0;
-      const musicNodes = [];
-      const musicLines = [];
+      let frame = 0;
+      const nodes = [];
+      const lines = [];
 
-      function addMusicNode(x, y, parent = null, delay = 0) {
+      function addNode(x, y, parent = null, delay = 0) {
         nodes.push({
           x,
           y,
