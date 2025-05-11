@@ -71,7 +71,7 @@ async function handleMovieSearch(searchTerm) {
     const data = await res.json();
     const movies = data?.Search ?? [];
 
-    if (movies.length > 0) {
+    if (movies && movies.length > 0) { // Verifică dacă 'movies' există și are elemente
       for (const movie of movies) {
         const movieDetails = await fetchMovieDetails(movie.imdbID);
         if (movieDetails) {
@@ -113,7 +113,7 @@ async function handleActorSearch(searchTerm) {
     const data = await res.json();
     const movies = data?.Search ?? [];
 
-    if (movies.length > 0) {
+    if (movies && movies.length > 0) { // Verifică dacă 'movies' există și are elemente
       for (const movie of movies) {
         const movieDetails = await fetchMovieDetails(movie.imdbID);
         if (movieDetails && movieDetails.Actors && movieDetails.Actors.includes(searchTerm)) {
@@ -198,7 +198,7 @@ function adjustEdge(source, target, radius = 28) {
   const x1 = source.x + dx * (radius / dist);
   const y1 = source.y + dy * (radius / dist);
   const x2 = source.x + dx * ratio;
-  const y2 = dy * ratio;
+  const y2 = source.y + dy * ratio;
   return { x1, y1, x2, y2 };
 }
 
