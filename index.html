@@ -38,38 +38,56 @@
       }
     }
 
+    .hub-container {
+      /* Nou container pentru butoane și animație */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin-bottom: 30px;
+      z-index: 2;
+    }
+
+    .hub-buttons-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .hub-button {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      background-color: #00cc66;
+      border-radius: 6px;
+      color: #fff;
+      text-decoration: none;
+      margin: 0 10px;
+      transition: box-shadow 0.3s ease;
+      cursor: pointer;
+      border: none;
+    }
+
+    .hub-button:hover {
+      box-shadow: 0 0 12px #00cc66;
+    }
+
     #music-demo-canvas {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
       width: 320px;
       height: 160px;
       opacity: 0.2;
-      z-index: 1;
+      margin-top: 10px;
+      /* Spațiu sub butoane */
     }
 
     #movie-demo-container {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
+      /* Modificat pentru a nu mai suprapune */
       width: 320px;
       height: 160px;
-      z-index: 1;
-      /* opacity: 0.8; */
-      /* Am scos opacitatea de aici */
+      margin-top: 10px;
+      /* Spațiu sub butoane */
     }
 
     #movie-demo {
-      width: 100%;
-      height: 100%;
-      /* background-color: #00cc66; */
-      /* Am scos culoarea de fundal */
-      /* Implementează "filmul foto" aici (vezi explicații) */
-    }
-
-    canvas {
       width: 100%;
       height: 100%;
     }
@@ -92,32 +110,6 @@
       50% {
         opacity: 0.85;
       }
-    }
-
-    .hub-buttons-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 30px;
-      z-index: 2;
-    }
-
-    .hub-button {
-      padding: 12px 24px;
-      font-size: 16px;
-      font-weight: bold;
-      background-color: #00cc66;
-      border-radius: 6px;
-      color: #fff;
-      text-decoration: none;
-      margin: 0 10px;
-      transition: box-shadow 0.3s ease;
-      cursor: pointer;
-      border: none;
-    }
-
-    .hub-button:hover {
-      box-shadow: 0 0 12px #00cc66;
     }
 
     #created-by {
@@ -271,17 +263,19 @@
 
 <body>
   <div id="hero-text">START EXPLORING YOUR WAY</div>
-  <canvas id="music-demo-canvas" width="320" height="160"></canvas>
-  <div id="movie-demo-container">
-    <div id="movie-demo">
-      </div>
-  </div>
 
   <img src="logo.png" alt="Blacklist Logo" />
 
-  <div class="hub-buttons-container">
-    <a href="map.html" class="hub-button">MUSIC HUB</a>
-    <a href="#" class="hub-button">MOVIE HUB</a>
+  <div class="hub-container">
+    <div class="hub-buttons-container">
+      <a href="map.html" class="hub-button">MUSIC HUB</a>
+      <a href="#" class="hub-button">MOVIE HUB</a>
+    </div>
+    <canvas id="music-demo-canvas" width="320" height="160"></canvas>
+    <div id="movie-demo-container">
+      <div id="movie-demo">
+        </div>
+    </div>
   </div>
 
   <div id="created-by">created by dj grewu</div>
