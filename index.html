@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html lang="ro">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Blacklist Music Hub</title>
+  <title>Blacklist Hub</title>
   <style>
     body {
       margin: 0;
@@ -32,7 +33,9 @@
     }
 
     @keyframes fadeIn {
-      to { opacity: 0.7; }
+      to {
+        opacity: 0.7;
+      }
     }
 
     #demo-canvas {
@@ -58,21 +61,25 @@
     }
 
     @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.85; }
+      0%,
+      100% {
+        opacity: 1;
+      }
+
+      50% {
+        opacity: 0.85;
+      }
     }
 
-    p {
-      font-size: 16px;
-      color: #ccc;
-      font-weight: bold;
-      letter-spacing: 2px;
-      margin-top: -10px;
+    .hub-buttons-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
       margin-bottom: 30px;
       z-index: 2;
     }
 
-    a#start-button {
+    .hub-button {
       padding: 12px 24px;
       font-size: 16px;
       font-weight: bold;
@@ -80,11 +87,13 @@
       border-radius: 6px;
       color: #fff;
       text-decoration: none;
-      z-index: 2;
+      margin: 0 10px;
       transition: box-shadow 0.3s ease;
+      cursor: pointer;
+      border: none;
     }
 
-    a#start-button:hover {
+    .hub-button:hover {
       box-shadow: 0 0 12px #00cc66;
     }
   </style>
@@ -106,11 +115,27 @@
       const lines = [];
 
       function addNode(x, y, parent = null, delay = 0) {
-        nodes.push({ x, y, r: 0, maxR: 5, growth: 0.3, delay, frame: 0, parent });
+        nodes.push({
+          x,
+          y,
+          r: 0,
+          maxR: 5,
+          growth: 0.3,
+          delay,
+          frame: 0,
+          parent
+        });
       }
 
       function addLine(x1, y1, x2, y2, delay = 0) {
-        lines.push({ x1, y1, x2, y2, progress: 0, delay });
+        lines.push({
+          x1,
+          y1,
+          x2,
+          y2,
+          progress: 0,
+          delay
+        });
       }
 
       function resetDemo() {
@@ -118,9 +143,9 @@
         lines.length = 0;
         frame = 0;
 
-        const cx = 160, cy = 80;
+        const cx = 160,
+          cy = 80;
         addNode(cx, cy);
-
         const angles1 = [0, 120, 240];
         angles1.forEach((a, i) => {
           const rad = a * Math.PI / 180;
@@ -128,6 +153,7 @@
           const y = cy + 40 * Math.sin(rad);
           addNode(x, y, 0, 30 + i * 5);
           addLine(cx, cy, x, y, 30 + i * 5);
+
         });
 
         setTimeout(() => {
@@ -141,7 +167,6 @@
             addLine(from.x, from.y, x, y, 100 + i * 5);
           });
         }, 700);
-
         setTimeout(() => {
           const from = nodes[2];
           const angles3 = [60, 120];
@@ -149,6 +174,7 @@
             const rad = a * Math.PI / 180;
             const x = from.x + 30 * Math.cos(rad);
             const y = from.y + 30 * Math.sin(rad);
+
             addNode(x, y, 2, 160 + i * 5);
             addLine(from.x, from.y, x, y, 160 + i * 5);
           });
@@ -167,11 +193,11 @@
           const x = line.x1 + (line.x2 - line.x1) * p;
           const y = line.y1 + (line.y2 - line.y1) * p;
           ctx.beginPath();
+
           ctx.moveTo(line.x1, line.y1);
           ctx.lineTo(x, y);
           ctx.stroke();
         });
-
         nodes.forEach(node => {
           if (frame < node.delay) return;
           if (node.r < node.maxR) node.r += node.growth;
@@ -179,7 +205,6 @@
           ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
           ctx.fill();
         });
-
         frame++;
         if (frame < 300) {
           requestAnimationFrame(draw);
@@ -198,12 +223,18 @@
     };
   </script>
 </head>
+
 <body>
   <div id="demo-text">Start exploring music your way</div>
   <canvas id="demo-canvas" width="320" height="160"></canvas>
 
   <img src="logo.png" alt="Blacklist Logo" />
-  <p>MUSIC HUB</p>
-  <a id="start-button" href="map.html">Începe explorarea</a>
+
+  <div class="hub-buttons-container">
+    <a href="map.html" class="hub-button">MUSIC HUB</a>
+    <a href="#" class="hub-button">MOVIE HUB</a>
+  </div>
+
 </body>
+
 </html>
