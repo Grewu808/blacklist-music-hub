@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="ro">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blacklist Movie Hub</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000000;
+      font-family: Arial, sans-serif;
+      color: #fff;
+    }
+
+    #controls {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.7);
+      padding: 10px 15px;
+      border-radius: 8px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .hub-switch-container {
+      /* Container pentru switch-ul Actor/Film */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .hub-switch-button {
+      /* Stil pentru butoanele Actor și Film */
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      background-color: #333;
+      color: #aaa;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 15px;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    .hub-switch-button.active {
+      /* Stil pentru butonul activ */
+      background-color: #00cc66;
+      color: #fff;
+    }
+
+    #search-container {
+      /* Container pentru input și butonul de căutare */
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    #search-input {
+      /* Stil pentru input */
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: none;
+      font-size: 16px;
+      width: 220px;
+      max-width: 80vw;
+      text-align: center;
+    }
+
+    #search-button {
+      /* Stil pentru butonul de căutare */
+      padding: 8px 14px;
+      border-radius: 6px;
+      border: none;
+      background-color: #00cc66;
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 15px;
+      transition: box-shadow 0.3s ease;
+    }
+
+    #search-button:hover {
+      box-shadow: 0 0 10px #00cc66;
+    }
+
+    #movie-viz {
+      /* Container pentru vizualizarea filmelor */
+      width: 100vw;
+      height: 100vh;
+      display: block;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="controls">
+    <div class="hub-switch-container">
+      <button class="hub-switch-button active" data-hub="movie">Film</button>
+      <button class="hub-switch-button" data-hub="actor">Actor</button>
+    </div>
+
+    <div id="search-container">
+      <input id="search-input" type="text" placeholder="Caută Film" />
+      <button id="search-button">Caută</button>
+    </div>
+  </div>
+
+  <svg id="movie-viz"></svg>
+
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+  <script src="movie-graph.js"></script>
+  <script>
+    const movieSearchInput = document.getElementById("search-input");
+    const movieSearchButton = document.getElementById("search-button");
+    const hubSwitchButtons = document.querySelectorAll(".hub-switch-button");
+    let currentHub = "movie";
+
+    // Funcție pentru a comuta între hub-uri
+    function switchHub(hub) {
+      currentHub = hub;
+      hubSwitchButtons.forEach(button => button.classList.remove("active"));
+      document.querySelector(`.hub-switch-button[data-hub="${hub}"]`).classList.add("active");
+
+      // Resetează inputul și graficul
+      search-input.value = "";
+      // Resetează graficul
+      resetMovieGraph();
+
+      // Actualizează placeholder-ul input-ului
+      if (hub === "movie") {
+        search-input.placeholder = "Caută Film";
+      } else if (hub === "actor") {
+        search-input.placeholder = "Caută Actor";
+      }
+    }
+
+    // Event listeners pentru butoanele de comutare
+    hubSwitchButtons.forEach(button => {
+      button.addEventListener("click", () => {
+        const hub = button.getAttribute("data-hub");
+        switchHub(hub);
+      });
+    });
+
+    // Event listener pentru căutare
+    movieSearchButton.addEventListener("click", () => {
+      const searchTerm = movieSearchInput.value.trim();
+      if (searchTerm) {
+        if (currentHub === "movie") {
+          handleMovieSearch(searchTerm);
+        } else if (currentHub === "actor") {
+          handleActorSearch(searchTerm);
+        }
+      }
+    });
+
+    // Event listener pentru apăsarea Enter
+    movieSearchInput.addEventListener("keypress", (event) => {
+      if (event.key === "Enter") {
+        movieSearchButton.click();
+      }
+    });
+
+    // Funcții placeholder (vor fi definite în movie-graph.js)
+    function handleMovieSearch(searchTerm) {
+      console.log("Căutare film:", searchTerm);
+      // Apel către funcția din movie-graph.js pentru căutarea filmelor
+    }
+
+    function handleActorSearch(searchTerm) {
+      console.log("Căutare actor:", searchTerm);
+      // Apel către funcția din movie-graph.js pentru căutarea actorilor
+    }
+
+    // Funcție placeholder pentru resetarea graficului (va fi definită în movie-graph.js)
+    function resetMovieGraph() {
+      console.log("Resetează graficul");
+      // Apel către funcția din movie-graph.js pentru resetarea graficului
+    }
+  </script>
+</body>
+
+</html>
