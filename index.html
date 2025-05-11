@@ -22,8 +22,10 @@
 
     #hero-text {
       position: absolute;
-      top: 10px;
-      font-size: 4em;
+      top: 10%;
+      /* Urcat textul */
+      font-size: 2em;
+      /* Micșorat textul (jumătate din 4em) */
       font-weight: bold;
       color: white;
       letter-spacing: 0.1em;
@@ -39,12 +41,17 @@
     }
 
     .hub-container {
-      /* Nou container pentru butoane și animație */
       display: flex;
       flex-direction: column;
       align-items: center;
       margin-bottom: 30px;
       z-index: 2;
+      position: absolute;
+      /* Poziționare absolută */
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      /* Centrare perfectă */
     }
 
     .hub-buttons-container {
@@ -76,15 +83,12 @@
       height: 160px;
       opacity: 0.2;
       margin-top: 10px;
-      /* Spațiu sub butoane */
     }
 
     #movie-demo-container {
-      /* Modificat pentru a nu mai suprapune */
       width: 320px;
       height: 160px;
       margin-top: 10px;
-      /* Spațiu sub butoane */
     }
 
     #movie-demo {
@@ -96,7 +100,9 @@
       width: 240px;
       height: auto;
       margin-bottom: 30px;
-      margin-top: -50px;
+      /* Spațiu sub logo */
+      /* margin-top: -50px; */
+      /* Eliminat */
       z-index: 2;
       animation: pulse 4s ease-in-out infinite;
     }
