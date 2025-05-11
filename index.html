@@ -24,11 +24,9 @@
       position: absolute;
       top: 10px;
       font-size: 4em;
-      /* Aprox. 5x mai mare */
       font-weight: bold;
       color: white;
       letter-spacing: 0.1em;
-      /* Ajustat */
       z-index: 10;
       animation: fadeIn 2s ease forwards;
       opacity: 0;
@@ -41,37 +39,33 @@
     }
 
     #music-demo-canvas {
-      /* Renumit pentru claritate */
       position: absolute;
       top: 50%;
-      /* Centrat vertical */
       left: 50%;
       transform: translate(-50%, -50%);
       width: 320px;
       height: 160px;
       opacity: 0.2;
-      /* Mai proeminent */
       z-index: 1;
     }
 
     #movie-demo-container {
-      /* Nou container pentru "film" */
       position: absolute;
       top: 50%;
-      /* Centrat vertical */
       left: 50%;
       transform: translate(-50%, -50%);
       width: 320px;
       height: 160px;
       z-index: 1;
-      opacity: 0.8;
+      /* opacity: 0.8; */
+      /* Am scos opacitatea de aici */
     }
 
     #movie-demo {
       width: 100%;
       height: 100%;
-      background-color: #00cc66;
-      /* Culoare similară cu Music Hub */
+      /* background-color: #00cc66; */
+      /* Am scos culoarea de fundal */
       /* Implementează "filmul foto" aici (vezi explicații) */
     }
 
@@ -84,9 +78,7 @@
       width: 240px;
       height: auto;
       margin-bottom: 30px;
-      /* Mai mult spațiu */
       margin-top: -50px;
-      /* Urcat logo-ul */
       z-index: 2;
       animation: pulse 4s ease-in-out infinite;
     }
@@ -131,14 +123,11 @@
     #created-by {
       position: absolute;
       bottom: 20px;
-      /* Aproape de jos */
       font-size: 1.2em;
       font-family: serif;
-      /* Font serios */
       color: #aaa;
       opacity: 0;
       animation: fadeIn 5s 2s forwards;
-      /* Apare mai târziu */
       cursor: pointer;
     }
 
