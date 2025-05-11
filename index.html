@@ -20,13 +20,15 @@
       overflow: hidden;
     }
 
-    #demo-text {
+    #hero-text {
       position: absolute;
       top: 10px;
-      font-size: 14px;
+      font-size: 4em;
+      /* Aprox. 5x mai mare */
       font-weight: bold;
       color: white;
-      letter-spacing: 1px;
+      letter-spacing: 0.1em;
+      /* Ajustat */
       z-index: 10;
       animation: fadeIn 2s ease forwards;
       opacity: 0;
@@ -38,13 +40,39 @@
       }
     }
 
-    #demo-canvas {
+    #music-demo-canvas {
+      /* Renumit pentru claritate */
       position: absolute;
-      top: 30px;
+      top: 50%;
+      /* Centrat vertical */
+      left: 50%;
+      transform: translate(-50%, -50%);
       width: 320px;
       height: 160px;
-      opacity: 0.12;
+      opacity: 0.2;
+      /* Mai proeminent */
       z-index: 1;
+    }
+
+    #movie-demo-container {
+      /* Nou container pentru "film" */
+      position: absolute;
+      top: 50%;
+      /* Centrat vertical */
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 320px;
+      height: 160px;
+      z-index: 1;
+      opacity: 0.8;
+    }
+
+    #movie-demo {
+      width: 100%;
+      height: 100%;
+      background-color: #00cc66;
+      /* Culoare similară cu Music Hub */
+      /* Implementează "filmul foto" aici (vezi explicații) */
     }
 
     canvas {
@@ -55,7 +83,10 @@
     img {
       width: 240px;
       height: auto;
-      margin-bottom: 10px;
+      margin-bottom: 30px;
+      /* Mai mult spațiu */
+      margin-top: -50px;
+      /* Urcat logo-ul */
       z-index: 2;
       animation: pulse 4s ease-in-out infinite;
     }
@@ -96,6 +127,26 @@
     .hub-button:hover {
       box-shadow: 0 0 12px #00cc66;
     }
+
+    #created-by {
+      position: absolute;
+      bottom: 20px;
+      /* Aproape de jos */
+      font-size: 1.2em;
+      font-family: serif;
+      /* Font serios */
+      color: #aaa;
+      opacity: 0;
+      animation: fadeIn 5s 2s forwards;
+      /* Apare mai târziu */
+      cursor: pointer;
+    }
+
+    @keyframes fadeIn {
+      to {
+        opacity: 0.5;
+      }
+    }
   </style>
   <script>
     if (window.location.search) {
@@ -103,19 +154,19 @@
     }
 
     window.onload = () => {
-      const canvas = document.getElementById('demo-canvas');
-      const ctx = canvas.getContext('2d');
+      const musicCanvas = document.getElementById('music-demo-canvas');
+      const musicCtx = musicCanvas.getContext('2d');
       const scale = window.devicePixelRatio || 1;
-      canvas.width = 320 * scale;
-      canvas.height = 160 * scale;
-      ctx.scale(scale, scale);
+      musicCanvas.width = 320 * scale;
+      musicCanvas.height = 160 * scale;
+      musicCtx.scale(scale, scale);
 
-      let frame = 0;
-      const nodes = [];
-      const lines = [];
+      let musicFrame = 0;
+      const musicNodes = [];
+      const musicLines = [];
 
-      function addNode(x, y, parent = null, delay = 0) {
-        nodes.push({
+      function addMusicNode(x, y, parent = null, delay = 0) {
+        musicNodes.push({
           x,
           y,
           r: 0,
@@ -127,8 +178,8 @@
         });
       }
 
-      function addLine(x1, y1, x2, y2, delay = 0) {
-        lines.push({
+      function addMusicLine(x1, y1, x2, y2, delay = 0) {
+        musicLines.push({
           x1,
           y1,
           x2,
@@ -138,95 +189,104 @@
         });
       }
 
-      function resetDemo() {
-        nodes.length = 0;
-        lines.length = 0;
-        frame = 0;
+      function resetMusicDemo() {
+        musicNodes.length = 0;
+        musicLines.length = 0;
+        musicFrame = 0;
 
         const cx = 160,
           cy = 80;
-        addNode(cx, cy);
+        addMusicNode(cx, cy);
         const angles1 = [0, 120, 240];
         angles1.forEach((a, i) => {
           const rad = a * Math.PI / 180;
           const x = cx + 40 * Math.cos(rad);
           const y = cy + 40 * Math.sin(rad);
-          addNode(x, y, 0, 30 + i * 5);
-          addLine(cx, cy, x, y, 30 + i * 5);
+          addMusicNode(x, y, 0, 30 + i * 5);
+          addMusicLine(cx, cy, x, y, 30 + i * 5);
 
         });
 
         setTimeout(() => {
-          const from = nodes[1];
+          const from = musicNodes[1];
           const angles2 = [-30, 30];
           angles2.forEach((a, i) => {
             const rad = a * Math.PI / 180;
             const x = from.x + 30 * Math.cos(rad);
             const y = from.y + 30 * Math.sin(rad);
-            addNode(x, y, 1, 100 + i * 5);
-            addLine(from.x, from.y, x, y, 100 + i * 5);
+            addMusicNode(x, y, 1, 100 + i * 5);
+            addMusicLine(from.x, from.y, x, y, 100 + i * 5);
           });
         }, 700);
         setTimeout(() => {
-          const from = nodes[2];
+          const from = musicNodes[2];
           const angles3 = [60, 120];
           angles3.forEach((a, i) => {
             const rad = a * Math.PI / 180;
             const x = from.x + 30 * Math.cos(rad);
             const y = from.y + 30 * Math.sin(rad);
 
-            addNode(x, y, 2, 160 + i * 5);
-            addLine(from.x, from.y, x, y, 160 + i * 5);
+            addMusicNode(x, y, 2, 160 + i * 5);
+            addMusicLine(from.x, from.y, x, y, 160 + i * 5);
           });
         }, 1400);
       }
 
-      function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.strokeStyle = "#fff";
-        ctx.fillStyle = "#fff";
-        ctx.lineWidth = 1;
+      function drawMusic() {
+        musicCtx.clearRect(0, 0, musicCanvas.width, musicCanvas.height);
+        musicCtx.strokeStyle = "#fff";
+        musicCtx.fillStyle = "#fff";
+        musicCtx.lineWidth = 1;
 
-        lines.forEach(line => {
-          if (frame < line.delay) return;
-          const p = Math.min(1, (frame - line.delay) / 20);
+        musicLines.forEach(line => {
+          if (musicFrame < line.delay) return;
+          const p = Math.min(1, (musicFrame - line.delay) / 20);
           const x = line.x1 + (line.x2 - line.x1) * p;
           const y = line.y1 + (line.y2 - line.y1) * p;
-          ctx.beginPath();
+          musicCtx.beginPath();
 
-          ctx.moveTo(line.x1, line.y1);
-          ctx.lineTo(x, y);
-          ctx.stroke();
+          musicCtx.moveTo(line.x1, line.y1);
+          musicCtx.lineTo(x, y);
+          musicCtx.stroke();
         });
-        nodes.forEach(node => {
-          if (frame < node.delay) return;
+        musicNodes.forEach(node => {
+          if (musicFrame < node.delay) return;
           if (node.r < node.maxR) node.r += node.growth;
-          ctx.beginPath();
-          ctx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
-          ctx.fill();
+          musicCtx.beginPath();
+          musicCtx.arc(node.x, node.y, node.r, 0, Math.PI * 2);
+          musicCtx.fill();
         });
-        frame++;
-        if (frame < 300) {
-          requestAnimationFrame(draw);
+        musicFrame++;
+        if (musicFrame < 300) {
+          requestAnimationFrame(drawMusic);
         } else {
-          resetDemo();
-          requestAnimationFrame(draw);
+          resetMusicDemo();
+          requestAnimationFrame(drawMusic);
         }
       }
 
-      resetDemo();
-      draw();
+      resetMusicDemo();
+      drawMusic();
 
       const btn = document.getElementById("start-button");
       btn.addEventListener("mouseenter", () => btn.textContent = "Let's go...");
       btn.addEventListener("mouseleave", () => btn.textContent = "Începe explorarea");
+
+      const createdBy = document.getElementById("created-by");
+      createdBy.addEventListener("click", () => {
+        window.open("https://www.instagram.com/djgrewu?igsh=bXFiYmdwZ21pbGlh&utm_source=qr", "_blank");
+      });
     };
   </script>
 </head>
 
 <body>
-  <div id="demo-text">Start exploring music your way</div>
-  <canvas id="demo-canvas" width="320" height="160"></canvas>
+  <div id="hero-text">START EXPLORING YOUR WAY</div>
+  <canvas id="music-demo-canvas" width="320" height="160"></canvas>
+  <div id="movie-demo-container">
+    <div id="movie-demo">
+      </div>
+  </div>
 
   <img src="logo.png" alt="Blacklist Logo" />
 
@@ -235,6 +295,7 @@
     <a href="#" class="hub-button">MOVIE HUB</a>
   </div>
 
+  <div id="created-by">created by dj grewu</div>
 </body>
 
 </html>
