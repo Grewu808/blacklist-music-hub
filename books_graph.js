@@ -318,7 +318,3 @@ async function expandNode(event, clickedNode) {
         }
     }
 }
-
-// Nu există funcție showTrailer la books
-
-// Nu există modal la books
