@@ -173,6 +173,28 @@ function renderGraph() {
           .style("fill", "#fff")
           .style("pointer-events", "none");
 
+        // Titlul filmului
+g.filter(d => d.type === "movie")
+  .append("text")
+  .text(d => d.label)
+  .attr("text-anchor", "middle")
+  .attr("y", 105)
+  .style("font-size", "15px")
+  .style("font-weight", "bold")
+  .style("fill", "#fff")
+  .style("pointer-events", "none");
+
+// Anul filmului (sub titlu)
+g.filter(d => d.type === "movie")
+  .append("text")
+  .text(d => d.year || "")
+  .attr("text-anchor", "middle")
+  .attr("y", 125) // puțin mai jos decât titlul
+  .style("font-size", "13px")
+  .style("fill", "#aaa")
+  .style("pointer-events", "none");
+
+
         // Noduri actori: cerc
         g.filter(d => d.type === "actor")
           .append("circle")
