@@ -35,7 +35,9 @@ async function handleSearch() {
     let dataTitle = await resTitle.json();
 
     if (dataTitle.docs && dataTitle.docs.length > 0) {
-        let mainNode = await fetchBook(dataTitle.docs[0].key);
+        // Ia primul rezultat și folosește key-ul de work
+        let mainDoc = dataTitle.docs[0];
+        let mainNode = await fetchBook(mainDoc.key);
         if (mainNode) {
             nodeData.push(mainNode);
             svg.call(zoom.transform, d3.zoomIdentity);
@@ -49,24 +51,15 @@ async function handleSearch() {
     let resAuthor = await fetch(`${OPEN_LIBRARY_API_BASE}/search.json?author=${encodeURIComponent(term)}`);
     let dataAuthor = await resAuthor.json();
     if (dataAuthor.docs && dataAuthor.docs.length > 0) {
-        // Dacă primul rezultat are un singur autor, îl considerăm principal
-        if (dataAuthor.docs[0].author_name && dataAuthor.docs[0].author_name.length === 1) {
-            let mainNode = fetchAuthor(dataAuthor.docs[0].author_name[0]);
+        // Ia primul autor și caută cărțile lui
+        let mainDoc = dataAuthor.docs[0];
+        if (mainDoc.author_name && mainDoc.author_name.length > 0) {
+            let mainNode = fetchAuthor(mainDoc.author_name[0]);
             nodeData.push(mainNode);
             svg.call(zoom.transform, d3.zoomIdentity);
             renderGraph();
             simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
             return;
-        } else {
-            // Dacă sunt mai mulți autori sau nu e clar, luăm prima carte ca punct de plecare
-            let mainNode = await fetchBook(dataAuthor.docs[0].key);
-            if (mainNode) {
-                nodeData.push(mainNode);
-                svg.call(zoom.transform, d3.zoomIdentity);
-                renderGraph();
-                simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
-                return;
-            }
         }
     }
 
@@ -75,15 +68,21 @@ async function handleSearch() {
 
 async function fetchBook(bookKey) {
     try {
+        // bookKey e de forma "/works/OLxxxxW"
         const response = await fetch(`${OPEN_LIBRARY_API_BASE}${bookKey}.json`);
         const data = await response.json();
-        if (data) {
+        if (data && data.title) {
+            // Fallback pentru an publicare
+            let year = data.first_publish_year;
+            if (!year && data.created && data.created.value) {
+                year = data.created.value.substring(0, 4);
+            }
             return {
                 id: bookKey,
                 label: data.title,
                 type: "book",
                 imageUrl: data.covers && data.covers.length > 0 ? `${OPEN_LIBRARY_API_BASE}/b/id/${data.covers[0]}-M.jpg` : "https://via.placeholder.com/120x180?text=No+Cover",
-                first_publish_year: data.first_publish_year,
+                first_publish_year: year || "",
                 authors: data.authors ? data.authors.map(a => a.author.key) : [],
                 subjects: data.subjects || []
             };
@@ -270,15 +269,14 @@ async function expandNode(event, clickedNode) {
     // Cărți: adaugă cărți ale aceluiași autor
     if (clickedNode.type === "book" && clickedNode.authors && clickedNode.authors.length > 0) {
         const authorKey = clickedNode.authors[0];
-        const authorDetails = await fetch(`${OPEN_LIBRARY_API_BASE}${authorKey}.json`);
-        if (authorDetails && authorDetails.works) {
-            let relatedWorks = authorDetails.works.slice(0, 5);
-            for (const work of relatedWorks) {
-                const bookDetails = await fetch(`${OPEN_LIBRARY_API_BASE}${work.key}.json`);
-                if (bookDetails && bookDetails.editions && bookDetails.editions.length > 0) {
-                    const firstEditionKey = bookDetails.editions[0].key;
-                    if (!nodeData.some(x => x.id === firstEditionKey)) {
-                        const relatedBookNode = await fetchBook(firstEditionKey);
+        // Fetch works by author
+        try {
+            const authorWorksRes = await fetch(`${OPEN_LIBRARY_API_BASE}${authorKey}/works.json?limit=5`);
+            const authorWorksData = await authorWorksRes.json();
+            if (authorWorksData.entries && authorWorksData.entries.length > 0) {
+                for (const work of authorWorksData.entries) {
+                    if (!nodeData.some(x => x.id === work.key)) {
+                        const relatedBookNode = await fetchBook(work.key);
                         if (relatedBookNode) {
                             let angle = Math.random() * 2 * Math.PI;
                             relatedBookNode.x = clickedNode.x + 250 * Math.cos(angle);
@@ -288,8 +286,10 @@ async function expandNode(event, clickedNode) {
                         }
                     }
                 }
+                renderGraph();
             }
-            renderGraph();
+        } catch (e) {
+            // fallback: nu face nimic
         }
     }
 
@@ -319,5 +319,6 @@ async function expandNode(event, clickedNode) {
     }
 }
 
-// Funcția showTrailer ștearsă
-// Listener pentru închiderea trailer-ului șters
+// Nu există funcție showTrailer la books
+
+// Nu există modal la books
