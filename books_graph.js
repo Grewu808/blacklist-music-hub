@@ -131,6 +131,7 @@ function rippleEffect(selection, color = "#ffffff", maxRadius = 80, duration = 7
             .remove();
     });
 }
+
 function renderGraph() {
     link = container.selectAll("line.link")
         .data(linkData, d => `${d.source.id || d.source}-${d.target.id || d.target}`)
