@@ -31,27 +31,41 @@ async function handleSearch() {
   if (!term) return;
   nodeData = []; linkData = []; simulation.stop(); container.selectAll("*").remove();
 
-  // Caută film/actor/regizor
-  let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(term)}`);
+  // 1. Caută film exact
+  let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&t=${encodeURIComponent(term)}`);
   let data = await res.json();
-  if (data.Response !== "True") { alert("Nimic găsit!"); return; }
-  let first = data.Search[0];
 
-  // Dacă e film
-  if (first.Type === "movie" || first.Type === "series") {
-    let mainNode = await fetchMovie(first.imdbID);
+  if (data.Response === "True" && (data.Type === "movie" || data.Type === "series")) {
+    let mainNode = await fetchMovie(data.imdbID);
     nodeData.push(mainNode);
     svg.call(zoom.transform, d3.zoomIdentity);
     renderGraph();
     simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
-  } else {
-    // Dacă nu e film, presupunem că e actor
-    let mainNode = fetchActor(term);
-    nodeData.push(mainNode);
-    svg.call(zoom.transform, d3.zoomIdentity);
-    renderGraph();
-    simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
+    return;
   }
+
+  // 2. Dacă nu găsește film exact, caută după actor
+  res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(term)}`);
+  data = await res.json();
+  if (data.Response === "True") {
+    // Dacă primul rezultat e film, îl afișăm
+    let first = data.Search[0];
+    if (first.Type === "movie" || first.Type === "series") {
+      let mainNode = await fetchMovie(first.imdbID);
+      nodeData.push(mainNode);
+      svg.call(zoom.transform, d3.zoomIdentity);
+      renderGraph();
+      simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
+      return;
+    }
+  }
+
+  // 3. Dacă nu e film, presupunem că e actor
+  let mainNode = fetchActor(term);
+  nodeData.push(mainNode);
+  svg.call(zoom.transform, d3.zoomIdentity);
+  renderGraph();
+  simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
 }
 
 async function fetchMovie(imdbID) {
@@ -173,27 +187,14 @@ function renderGraph() {
           .style("fill", "#fff")
           .style("pointer-events", "none");
 
-        // Titlul filmului
-g.filter(d => d.type === "movie")
-  .append("text")
-  .text(d => d.label)
-  .attr("text-anchor", "middle")
-  .attr("y", 105)
-  .style("font-size", "15px")
-  .style("font-weight", "bold")
-  .style("fill", "#fff")
-  .style("pointer-events", "none");
-
-// Anul filmului (sub titlu)
-g.filter(d => d.type === "movie")
-  .append("text")
-  .text(d => d.year || "")
-  .attr("text-anchor", "middle")
-  .attr("y", 125) // puțin mai jos decât titlul
-  .style("font-size", "13px")
-  .style("fill", "#aaa")
-  .style("pointer-events", "none");
-
+        g.filter(d => d.type === "movie")
+          .append("text")
+          .text(d => d.year || "")
+          .attr("text-anchor", "middle")
+          .attr("y", 125)
+          .style("font-size", "13px")
+          .style("fill", "#aaa")
+          .style("pointer-events", "none");
 
         // Noduri actori: cerc
         g.filter(d => d.type === "actor")
@@ -320,10 +321,10 @@ async function expandNode(event, clickedNode) {
 }
 
 async function showTrailer(d) {
-  let q = d.label + " trailer";
+  let q = d.label + " " + (d.year || "") + " trailer";
   let yt = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&key=${YT_API_KEY}&type=video&maxResults=1`);
   let ytData = await yt.json();
-  if (ytData.items && ytData.items.length > 0) {
+  if (ytData.items && ytData.items.length > 0 && ytData.items[0].id && ytData.items[0].id.videoId) {
     let videoId = ytData.items[0].id.videoId;
     let modal = document.getElementById("trailer-modal");
     modal.innerHTML = `<iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" allowfullscreen></iframe>`;
