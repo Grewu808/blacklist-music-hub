@@ -31,7 +31,7 @@ async function handleSearch() {
   if (!term) return;
   nodeData = []; linkData = []; simulation.stop(); container.selectAll("*").remove();
 
-  // Detectăm dacă e film sau actor (simplu: dacă găsim "movie" în primul rezultat)
+  // Caută film/actor/regizor
   let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(term)}`);
   let data = await res.json();
   if (data.Response !== "True") { alert("Nimic găsit!"); return; }
@@ -46,7 +46,7 @@ async function handleSearch() {
     simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
   } else {
     // Dacă nu e film, presupunem că e actor
-    let mainNode = await fetchActor(term);
+    let mainNode = fetchActor(term);
     nodeData.push(mainNode);
     svg.call(zoom.transform, d3.zoomIdentity);
     renderGraph();
@@ -65,12 +65,10 @@ async function fetchMovie(imdbID) {
     year: data.Year,
     genre: data.Genre || "",
     plot: data.Plot || "",
-    related: data.Title // pentru căutare filme similare
   };
 }
 
 function fetchActor(name) {
-  // Actorii nu au ID unic în OMDb, îi tratăm doar după nume
   return {
     id: "actor-" + name,
     label: name,
@@ -225,6 +223,10 @@ function renderGraph() {
       exit => exit.transition().duration(300).attr("opacity", 0).remove()
     );
 
+  // Asigură-te că liniile sunt sub postere
+  container.selectAll("line.link").lower();
+  container.selectAll("g.node").raise();
+
   simulation.nodes(nodeData);
   simulation.force("link").links(linkData);
   if (simulation.alpha() < 0.1) simulation.alpha(0.3).restart();
@@ -232,22 +234,31 @@ function renderGraph() {
 
 async function expandNode(event, clickedNode) {
   if (!clickedNode) return;
-
-  // Noduri deja extinse? Nu mai extindem
   if (clickedNode.expanded) return;
   clickedNode.expanded = true;
 
-  // Filme: adaugă filme similare (nu actori!)
+  // Filme: adaugă filme din același gen
   if (clickedNode.type === "movie") {
-    // Caută filme cu același gen sau titlu similar
-    let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(clickedNode.label.split(" ")[0])}`);
+    let genres = clickedNode.genre ? clickedNode.genre.split(",").map(g => g.trim()) : [];
+    let mainGenre = genres[0] || clickedNode.label.split(" ")[0];
+
+    let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(mainGenre)}`);
     let data = await res.json();
     if (data.Response === "True") {
-      let movies = data.Search.filter(m => m.imdbID !== clickedNode.id && (m.Type === "movie" || m.Type === "series")).slice(0, 5);
+      let movies = [];
+      for (let m of data.Search) {
+        if (m.imdbID !== clickedNode.id && (m.Type === "movie" || m.Type === "series")) {
+          let det = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${m.imdbID}`);
+          let detData = await det.json();
+          if (detData.Genre && genres.some(g => detData.Genre.includes(g))) {
+            movies.push(m);
+          }
+        }
+        if (movies.length >= 5) break;
+      }
       for (let m of movies) {
         if (!nodeData.some(x => x.id === m.imdbID)) {
           let movieNode = await fetchMovie(m.imdbID);
-          // Poziționare în jurul nodului sursă
           let angle = Math.random() * 2 * Math.PI;
           movieNode.x = clickedNode.x + 250 * Math.cos(angle);
           movieNode.y = clickedNode.y + 250 * Math.sin(angle);
@@ -259,23 +270,20 @@ async function expandNode(event, clickedNode) {
     }
   }
 
-  // Actori: adaugă actori cu care a jucat împreună (nu filme!)
+  // Actori: adaugă actori cu care a jucat împreună
   if (clickedNode.type === "actor") {
-    // Caută filme cu acest actor, apoi extrage ceilalți actori
     let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(clickedNode.label)}`);
     let data = await res.json();
     if (data.Response === "True") {
       let movies = data.Search.slice(0, 5);
       for (let m of movies) {
         let movieNode = await fetchMovie(m.imdbID);
-        // Extrage actori din acest film
         let res2 = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${m.imdbID}`);
         let data2 = await res2.json();
         let actors = data2.Actors ? data2.Actors.split(",").map(a => a.trim()) : [];
         for (let name of actors) {
           if (name !== clickedNode.label && !nodeData.some(x => x.id === "actor-" + name)) {
             let actorNode = fetchActor(name);
-            // Poziționare în jurul nodului sursă
             let angle = Math.random() * 2 * Math.PI;
             actorNode.x = clickedNode.x + 200 * Math.cos(angle);
             actorNode.y = clickedNode.y + 200 * Math.sin(angle);
@@ -290,7 +298,6 @@ async function expandNode(event, clickedNode) {
 }
 
 async function showTrailer(d) {
-  // Caută trailer pe YouTube
   let q = d.label + " trailer";
   let yt = await fetch(`https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(q)}&key=${YT_API_KEY}&type=video&maxResults=1`);
   let ytData = await yt.json();
