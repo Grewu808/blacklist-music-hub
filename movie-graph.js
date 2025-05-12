@@ -7,18 +7,13 @@ const width = window.innerWidth, height = window.innerHeight;
 const svg = d3.select("#viz").attr("width", width).attr("height", height);
 const container = svg.append("g").attr("class", "zoom-container");
 
-svg.append("defs").append("clipPath")
-  .attr("id", "clip-circle")
-  .append("circle")
-  .attr("r", 36);
-
 let nodeData = [], linkData = [];
 
 const simulation = d3.forceSimulation(nodeData)
-  .force("link", d3.forceLink(linkData).distance(170).id(d => d.id))
-  .force("charge", d3.forceManyBody().strength(-550))
+  .force("link", d3.forceLink(linkData).distance(220).id(d => d.id))
+  .force("charge", d3.forceManyBody().strength(-700))
   .force("center", d3.forceCenter(width / 2, height / 2))
-  .force("collide", d3.forceCollide().radius(40))
+  .force("collide", d3.forceCollide().radius(d => d.type === "movie" ? 90 : 50))
   .on("tick", ticked);
 
 const zoom = d3.zoom().scaleExtent([0.1, 4]).on("zoom", e => container.attr("transform", e.transform));
@@ -36,53 +31,79 @@ async function handleSearch() {
   if (!term) return;
   nodeData = []; linkData = []; simulation.stop(); container.selectAll("*").remove();
 
-  // Caută film/actor/regizor
+  // Detectăm dacă e film sau actor (simplu: dacă găsim "movie" în primul rezultat)
   let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(term)}`);
   let data = await res.json();
   if (data.Response !== "True") { alert("Nimic găsit!"); return; }
   let first = data.Search[0];
-  let mainNode = await fetchMovieOrPerson(first.imdbID);
-  nodeData.push(mainNode);
 
-  svg.call(zoom.transform, d3.zoomIdentity);
-  renderGraph();
-  simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
+  // Dacă e film
+  if (first.Type === "movie" || first.Type === "series") {
+    let mainNode = await fetchMovie(first.imdbID);
+    nodeData.push(mainNode);
+    svg.call(zoom.transform, d3.zoomIdentity);
+    renderGraph();
+    simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
+  } else {
+    // Dacă nu e film, presupunem că e actor
+    let mainNode = await fetchActor(term);
+    nodeData.push(mainNode);
+    svg.call(zoom.transform, d3.zoomIdentity);
+    renderGraph();
+    simulation.nodes(nodeData); simulation.force("link").links(linkData); simulation.alpha(0.3).restart();
+  }
 }
 
-async function fetchMovieOrPerson(imdbID) {
+async function fetchMovie(imdbID) {
   let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${imdbID}&plot=short`);
   let data = await res.json();
   return {
     id: data.imdbID,
-    label: data.Title || data.Name,
-    type: data.Type || "movie",
-    imageUrl: data.Poster && data.Poster !== "N/A" ? data.Poster : "https://via.placeholder.com/150x220?text=No+Image",
+    label: data.Title,
+    type: "movie",
+    imageUrl: data.Poster && data.Poster !== "N/A" ? data.Poster : "https://via.placeholder.com/200x300?text=No+Image",
     year: data.Year,
-    actors: data.Actors ? data.Actors.split(",").map(a => a.trim()) : [],
-    director: data.Director || "",
     genre: data.Genre || "",
-    trailer: null // completăm la click
+    plot: data.Plot || "",
+    related: data.Title // pentru căutare filme similare
+  };
+}
+
+function fetchActor(name) {
+  // Actorii nu au ID unic în OMDb, îi tratăm doar după nume
+  return {
+    id: "actor-" + name,
+    label: name,
+    type: "actor",
+    imageUrl: "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=222&color=fff"
   };
 }
 
 function ticked() {
-  link.attr("x1", d => d.source.x).attr("y1", d => d.source.y)
-      .attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+  link
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y);
+
   nodeGroup.attr("transform", d => `translate(${d.x},${d.y})`);
 }
 
-function rippleEffect(selection, color = "#ffffff", maxRadius = 60, duration = 600) {
+function rippleEffect(selection, color = "#ffffff", maxRadius = 80, duration = 700) {
   selection.each(function() {
     const g = d3.select(this);
-    const ripple = g.insert("circle", ":first-child")
-      .attr("r", 0)
+    const ripple = g.insert("rect", ":first-child")
+      .attr("x", -60).attr("y", -90)
+      .attr("width", 120).attr("height", 180)
+      .attr("rx", 16)
       .attr("fill", "none")
       .attr("stroke", color)
-      .attr("stroke-width", 2)
-      .attr("opacity", 0.8);
+      .attr("stroke-width", 3)
+      .attr("opacity", 0.7);
     ripple.transition()
       .duration(duration)
-      .attr("r", maxRadius)
+      .attr("x", -80).attr("y", -120)
+      .attr("width", 160).attr("height", 240)
       .attr("opacity", 0)
       .remove();
   });
@@ -94,9 +115,9 @@ function renderGraph() {
     .join(
       enter => enter.append("line")
         .attr("class", "link")
-        .attr("stroke", "#555")
-        .attr("stroke-width", 1)
-        .attr("stroke-opacity", 0.4),
+        .attr("stroke", "#00cc66")
+        .attr("stroke-width", 2)
+        .attr("stroke-opacity", 0.5),
       update => update,
       exit => exit.remove()
     );
@@ -105,14 +126,16 @@ function renderGraph() {
     .data(nodeData, d => d.id)
     .join(
       enter => {
-        const g = enter.append("g").attr("class", "node");
+        const g = enter.append("g").attr("class", "node").style("cursor", "pointer");
 
-        g.each(function() {
-          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+        g.each(function(d) {
+          if (d.type === "movie") {
+            rippleEffect(d3.select(this), "#00cc66", 80, 700);
+          }
         });
 
         g.on("mouseover", function(e, d) {
-          rippleEffect(d3.select(this), "#ffffff", 60, 700);
+          if (d.type === "movie") rippleEffect(d3.select(this), "#00cc66", 80, 700);
         });
 
         g.on("click", (e, d) => {
@@ -122,32 +145,59 @@ function renderGraph() {
 
         g.on("dblclick", (e, d) => {
           e.stopPropagation();
-          showTrailer(d);
+          if (d.type === "movie") showTrailer(d);
         });
 
-        g.append("circle")
-          .attr("class", "outer-circle")
-          .attr("r", 36)
-          .attr("fill", "transparent")
+        // Noduri filme: dreptunghi poster
+        g.filter(d => d.type === "movie")
+          .append("rect")
+          .attr("x", -60).attr("y", -90)
+          .attr("width", 120).attr("height", 180)
+          .attr("rx", 16)
+          .attr("fill", "#222")
           .attr("stroke", "#aaa")
-          .attr("stroke-width", 1);
+          .attr("stroke-width", 2);
 
-        g.append("image")
+        g.filter(d => d.type === "movie")
+          .append("image")
           .attr("href", d => d.imageUrl)
-          .attr("width", 72)
-          .attr("height", 72)
-          .attr("x", -36)
-          .attr("y", -36)
-          .attr("clip-path", "url(#clip-circle)")
-          .style("filter", "drop-shadow(0px 1px 3px rgba(0,0,0,0.5))");
+          .attr("x", -60).attr("y", -90)
+          .attr("width", 120).attr("height", 180)
+          .attr("clip-path", null);
 
-        g.append("text")
+        g.filter(d => d.type === "movie")
+          .append("text")
           .text(d => d.label)
           .attr("text-anchor", "middle")
-          .attr("dy", 50)
-          .style("font-size", "13px")
+          .attr("y", 105)
+          .style("font-size", "15px")
           .style("font-weight", "bold")
-          .style("fill", "#ffffff")
+          .style("fill", "#fff")
+          .style("pointer-events", "none");
+
+        // Noduri actori: cerc
+        g.filter(d => d.type === "actor")
+          .append("circle")
+          .attr("r", 50)
+          .attr("fill", "#222")
+          .attr("stroke", "#aaa")
+          .attr("stroke-width", 2);
+
+        g.filter(d => d.type === "actor")
+          .append("image")
+          .attr("href", d => d.imageUrl)
+          .attr("x", -40).attr("y", -40)
+          .attr("width", 80).attr("height", 80)
+          .attr("clip-path", null);
+
+        g.filter(d => d.type === "actor")
+          .append("text")
+          .text(d => d.label)
+          .attr("text-anchor", "middle")
+          .attr("y", 65)
+          .style("font-size", "14px")
+          .style("font-weight", "bold")
+          .style("fill", "#fff")
           .style("pointer-events", "none");
 
         g.call(d3.drag()
@@ -167,7 +217,7 @@ function renderGraph() {
           })
         );
 
-        g.attr("transform", d => `translate(${d.x},${d.y})`);
+        g.attr("transform", d => `translate(${d.x || width/2},${d.y || height/2})`);
 
         return g;
       },
@@ -183,55 +233,58 @@ function renderGraph() {
 async function expandNode(event, clickedNode) {
   if (!clickedNode) return;
 
-  const nodeEl = event.currentTarget ? d3.select(event.currentTarget) : null;
-  if (nodeEl && !nodeEl.empty()) {
-    rippleEffect(nodeEl, "#ffffff", 60, 700);
-    nodeEl.select("image").style("opacity", 0.5);
-    nodeEl.select(".outer-circle").style("stroke", "#f0f0f0");
-  }
+  // Noduri deja extinse? Nu mai extindem
+  if (clickedNode.expanded) return;
+  clickedNode.expanded = true;
 
-  try {
-    // Dacă e film, adaugă actori și regizor ca noduri
-    if (clickedNode.type === "movie") {
-      let actorNodes = clickedNode.actors.map(name => ({
-        id: clickedNode.id + "-actor-" + name,
-        label: name,
-        type: "actor",
-        imageUrl: "https://ui-avatars.com/api/?name=" + encodeURIComponent(name) + "&background=222&color=fff"
-      }));
-      let directorNode = clickedNode.director ? [{
-        id: clickedNode.id + "-director-" + clickedNode.director,
-        label: clickedNode.director,
-        type: "director",
-        imageUrl: "https://ui-avatars.com/api/?name=" + encodeURIComponent(clickedNode.director) + "&background=222&color=fff"
-      }] : [];
-      let newNodes = [...actorNodes, ...directorNode].filter(n => !nodeData.some(x => x.id === n.id));
-      nodeData.push(...newNodes);
-      newNodes.forEach(n => linkData.push({ source: clickedNode.id, target: n.id }));
+  // Filme: adaugă filme similare (nu actori!)
+  if (clickedNode.type === "movie") {
+    // Caută filme cu același gen sau titlu similar
+    let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(clickedNode.label.split(" ")[0])}`);
+    let data = await res.json();
+    if (data.Response === "True") {
+      let movies = data.Search.filter(m => m.imdbID !== clickedNode.id && (m.Type === "movie" || m.Type === "series")).slice(0, 5);
+      for (let m of movies) {
+        if (!nodeData.some(x => x.id === m.imdbID)) {
+          let movieNode = await fetchMovie(m.imdbID);
+          // Poziționare în jurul nodului sursă
+          let angle = Math.random() * 2 * Math.PI;
+          movieNode.x = clickedNode.x + 250 * Math.cos(angle);
+          movieNode.y = clickedNode.y + 250 * Math.sin(angle);
+          nodeData.push(movieNode);
+          linkData.push({ source: clickedNode.id, target: movieNode.id });
+        }
+      }
       renderGraph();
     }
-    // Dacă e actor sau regizor, caută filmele asociate
-    if (clickedNode.type === "actor" || clickedNode.type === "director") {
-      let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(clickedNode.label)}`);
-      let data = await res.json();
-      if (data.Response === "True") {
-        let movies = data.Search.slice(0, 5);
-        for (let m of movies) {
-          if (!nodeData.some(x => x.id === m.imdbID)) {
-            let movieNode = await fetchMovieOrPerson(m.imdbID);
-            nodeData.push(movieNode);
-            linkData.push({ source: clickedNode.id, target: movieNode.id });
+  }
+
+  // Actori: adaugă actori cu care a jucat împreună (nu filme!)
+  if (clickedNode.type === "actor") {
+    // Caută filme cu acest actor, apoi extrage ceilalți actori
+    let res = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&s=${encodeURIComponent(clickedNode.label)}`);
+    let data = await res.json();
+    if (data.Response === "True") {
+      let movies = data.Search.slice(0, 5);
+      for (let m of movies) {
+        let movieNode = await fetchMovie(m.imdbID);
+        // Extrage actori din acest film
+        let res2 = await fetch(`https://www.omdbapi.com/?apikey=${OMDB_API_KEY}&i=${m.imdbID}`);
+        let data2 = await res2.json();
+        let actors = data2.Actors ? data2.Actors.split(",").map(a => a.trim()) : [];
+        for (let name of actors) {
+          if (name !== clickedNode.label && !nodeData.some(x => x.id === "actor-" + name)) {
+            let actorNode = fetchActor(name);
+            // Poziționare în jurul nodului sursă
+            let angle = Math.random() * 2 * Math.PI;
+            actorNode.x = clickedNode.x + 200 * Math.cos(angle);
+            actorNode.y = clickedNode.y + 200 * Math.sin(angle);
+            nodeData.push(actorNode);
+            linkData.push({ source: clickedNode.id, target: actorNode.id });
           }
         }
-        renderGraph();
       }
-    }
-  } catch (err) {
-    console.error("Expand error:", err);
-  } finally {
-    if (nodeEl) {
-      nodeEl.select("image").style("opacity", 1);
-      nodeEl.select(".outer-circle").style("stroke", "#aaa");
+      renderGraph();
     }
   }
 }
