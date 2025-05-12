@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Graph</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; font-family: sans-serif; overflow: hidden; }
+        #search-container { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10; display: flex; }
+        #search { padding: 10px; border: none; border-radius: 5px 0 0 5px; font-size: 16px; color: #333; }
+        #search-btn { padding: 10px 15px; border: none; border-radius: 0 5px 5px 0; background: #00cc66; color: #fff; font-size: 16px; cursor: pointer; }
+        #viz { width: 100vw; height: 100vh; display: block; }
+        .link { stroke: #aaa; stroke-opacity: 0.3; }
+        .node circle { fill: #222; stroke: #aaa; stroke-width: 2px; }
+        .node text { fill: #fff; font-size: 12px; text-anchor: middle; user-select: none; }
+        .node image { filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.5)); }
+    </style>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div id="search-container">
+        <input type="text" id="search" placeholder="Caută carte, autor...">
+        <button id="search-btn">Caută</button>
+    </div>
+    <svg id="viz"></svg>
+    <script src="books_graph.js"></script>
+</body>
+</html>
